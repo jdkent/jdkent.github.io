@@ -358,7 +358,7 @@ The steps would look something like this:
 ```bash
 git add .circleci/config.yml
 git commit -m 'add circleci build configuration'
-git push origin masterj
+git push origin master
 ```
 
 **Note**: the error I ran into when doing this was incorrect permissions of `eprime_convert.py` in my repository.
