@@ -1,3 +1,8 @@
+---
+layout: post
+author: James Kent
+---
+
 # Python User Learning R
 
 Just as I'm getting a feel for python, why not tack on another language.
