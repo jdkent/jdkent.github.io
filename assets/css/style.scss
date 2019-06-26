@@ -899,3 +899,9 @@ td{
     padding: 2px;
     border:1px solid $dark-blue;;
 }
+
+pre {
+	overflow: auto;
+	word-wrap: normal;
+	white-space: pre;
+  }
