@@ -8,10 +8,7 @@ redirect_from:
 ---
 
 {% include base_path %}
+This page is kept for backwards compatibility.
 
-{% include cv-template.html %}
-
-<div class="cv-download-links">
-  <a href="{{ base_path }}/files/cv.pdf" class="btn btn--primary">Download CV as PDF</a>
-  <a href="{{ base_path }}" class="btn btn--inverse">View Markdown CV</a>
-</div>
+- [Download CV as PDF]({{ base_path }}/files/James-Kent-CV.pdf){:target="_blank"}
+- [View web CV]({{ base_path }}/cv/)

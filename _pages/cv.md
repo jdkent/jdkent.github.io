@@ -9,37 +9,25 @@ redirect_from:
 
 {% include base_path %}
 
+Download
+======
+- [CV (PDF)]({{ base_path }}/files/James-Kent-CV.pdf){:target="_blank"}
+
+Positions
+======
+- **NeuroSynth 2.0 Technical Lead** (2020–present), University of Texas at Austin / Neuroinformagic Lab
+- **Lead Developer & Maintainer, NiMARE ecosystem** (2020–present), Open Neuroimaging Tools Consortium
+
 Education
 ======
-* Ph.D in Version Control Theory, GitHub University, 2018 (expected)
-* M.S. in Jekyll, GitHub University, 2014
-* B.S. in GitHub, GitHub University, 2012
+- **PhD, Neuroscience** (2014–2020), University of Iowa — Advisor: Michelle W. Voss
+- **BA, Psychology (Neuroscience concentration)** (2010–2014), Grinnell College
 
-Work experience
+Focus areas
 ======
-* Spring 2024: Academic Pages Collaborator
-  * GitHub University
-  * Duties includes: Updates and improvements to template
-  * Supervisor: The Users
-
-* Fall 2015: Research Assistant
-  * GitHub University
-  * Duties included: Merging pull requests
-  * Supervisor: Professor Hub
-
-* Summer 2015: Research Assistant
-  * GitHub University
-  * Duties included: Tagging issues
-  * Supervisor: Professor Git
-  
-Skills
-======
-* Skill 1
-* Skill 2
-  * Sub-skill 2.1
-  * Sub-skill 2.2
-  * Sub-skill 2.3
-* Skill 3
+- Research software engineering for reproducible neuroimaging and meta-analysis
+- Open data infrastructure, standards, and community tools
+- Mentoring, workshops, and open science community leadership
 
 Publications
 ======
@@ -59,6 +47,6 @@ Teaching
     {% include archive-single-cv.html %}
   {% endfor %}</ul>
   
-Service and leadership
+Service and leadership (selected)
 ======
-* Currently signed in to 43 different slack teams
+- OHBM Open Science Room Chair (2025–2026)
