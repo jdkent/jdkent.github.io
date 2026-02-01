@@ -11,9 +11,6 @@ main:
   - title: "About"
     url: /
 
-  - title: "Applied Informatics"
-    url: /applied-informatics/
-
   - title: "Projects"
     url: /portfolio/
 
