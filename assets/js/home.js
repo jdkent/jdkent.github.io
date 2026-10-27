@@ -125,15 +125,21 @@ lobes.forEach((lobe, i) => {
     const example = link?.classList.contains("lobe__example") && lobe.dataset.zoom === "list";
     go(example ? hashFor(pathOf(link.href), key) : `#${key}/`);
   });
+});
 
-  lobe.addEventListener("keydown", (event) => {
-    const moves = { ArrowRight: 1, ArrowLeft: -1 };
-    if (!(event.key in moves || event.key === "Home" || event.key === "End")) return;
-    event.preventDefault();
-    const next = event.key === "Home" ? 0 : event.key === "End" ? lobes.length - 1 : (i + moves[event.key] + lobes.length) % lobes.length;
-    susan.goTo(next);
-    lobes[next].querySelector(".lobe__more").focus({ preventScroll: true });
-  });
+// The arrow keys turn the turntable from anywhere on the main screen, a
+// panel per press, so quick presses add up; Home and End jump to the ends
+// when focus is on it. Focus on a panel follows the panel coming to the front.
+document.addEventListener("keydown", (event) => {
+  if (current.path !== null || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (event.target.closest("input, textarea, select, [contenteditable]")) return;
+  const onRing = scene.contains(document.activeElement);
+  const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+  if (step) susan.spin(step);
+  else if (onRing && (event.key === "Home" || event.key === "End")) susan.goTo(event.key === "Home" ? 0 : lobes.length - 1);
+  else return;
+  event.preventDefault();
+  if (onRing && document.activeElement.closest(".lobe")) lobes[susan.target].querySelector(".lobe__more").focus({ preventScroll: true });
 });
 
 // Zoom

@@ -137,5 +137,6 @@ export function createLazySusan(scene, ring, panels, { onFront, reducedMotion = 
   }, true);
 
   layout();
-  return { layout, goTo, spin, get front() { return front; } };
+  // `front` is the panel at the front now; `target`, the one the ring is turning to.
+  return { layout, goTo, spin, get front() { return front; }, get target() { return mod(Math.round(-target / step), n); } };
 }
