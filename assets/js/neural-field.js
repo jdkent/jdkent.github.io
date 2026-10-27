@@ -2,13 +2,20 @@
 // neurons; spikes travel outward along axons and fire the neurons they reach.
 // Stimuli that arrive in quick succession raise arousal, which lets each hop
 // keep more of its energy, so rapid clicking carries waves off the page edges.
+// Neurons also fire on their own now and then, so the network is never still.
 
 const LEVELS = 24;
 
 const CUTOFF = 0.05;       // energy below which a spike is not propagated
 const AROUSAL_TAU = 1.6;   // s for arousal to decay by 1/e
-const NODE_DECAY = 0.5;    // s glow time constants
-const EDGE_DECAY = 0.9;
+// Glow swells in over NODE_RISE and fades over the decays, so firing blooms
+// rather than flashes.
+const NODE_RISE = 0.25;    // s glow time constants
+const NODE_DECAY = 1.0;
+const EDGE_DECAY = 1.6;
+// Spontaneous firing: a random neuron on screen, at random intervals.
+const SPONTANEOUS_MEAN = 4;  // s between firings, on average
+const SPONTANEOUS_MIN = 1.5; // s, at least
 const MAX_SPIKES = 1500;
 // Low-power mode: when frames keep arriving slower than SLOW_FRAME (as on
 // software rendering), draw activity at half resolution with fewer spikes.
@@ -95,6 +102,7 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
           y: (j - 0.5) * spacing + (rand() - 0.5) * spacing * 0.85,
           r: 1 + rand() * 1.4,
           heat: 0,
+          charge: 0,
           edges: [],
         });
       }
@@ -186,7 +194,7 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
   function fire(node, energy, wave) {
     if (wave.fired.has(node.id)) return;
     wave.fired.add(node.id);
-    node.heat = Math.min(1, node.heat + energy * 0.7);
+    node.charge += energy;
     const next = energy * wave.gain;
     if (next < CUTOFF) return;
     // Only propagate away from the stimulus, so the wave expands instead of echoing.
@@ -216,8 +224,14 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     // fire() appends newly spawned spikes past `count`; they start moving next frame.
     spikes = alive.concat(current.slice(count));
     const kn = Math.exp(-dt / NODE_DECAY), ke = Math.exp(-dt / EDGE_DECAY);
+    const rise = 1 - Math.exp(-dt / NODE_RISE);
     let active = spikes.length > 0;
-    for (const n of nodes) { n.heat *= kn; if (n.heat > 0.01) active = true; }
+    for (const n of nodes) {
+      const take = n.charge * rise;
+      n.charge -= take;
+      n.heat = Math.min(1, n.heat * kn + take);
+      if (n.heat > 0.01 || n.charge > 0.01) active = true;
+    }
     for (const e of edges) { e.heat *= ke; if (e.heat > 0.01) active = true; }
     return active;
   }
@@ -294,7 +308,7 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     if (arouse) { drive += 1; arousal = drive; arousalAt = t; }
     // 0 for an isolated click, approaching 1 as clicks come faster.
     const a = 1 - Math.exp(-Math.max(0, drive - 1) / 1.8);
-    const wave = { x, y, gain: 0.64 + 0.33 * a, speed: 300 + 500 * a, fired: new Set() };
+    const wave = { x, y, gain: 0.64 + 0.33 * a, speed: 150 + 250 * a, fired: new Set() };
     const energy = arouse ? 0.55 + 0.45 * a : 0.4;
     const nearest = nodes
       .map((n) => [Math.hypot(n.x - x, n.y - y), n])
@@ -303,6 +317,21 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     nearest.forEach(([, n], k) => fire(n, energy * (1 - k * 0.1), wave));
     start();
   }
+
+  // A neuron somewhere on screen fires by itself: a quiet wave that dies out
+  // within a few hops. Skipped while the tab is hidden.
+  function fireSpontaneously() {
+    const wait = SPONTANEOUS_MIN - Math.log(1 - Math.random()) * (SPONTANEOUS_MEAN - SPONTANEOUS_MIN);
+    setTimeout(() => {
+      const onScreen = nodes.filter((n) => n.x > 0 && n.y > 0 && n.x < width && n.y < height);
+      if (!document.hidden && onScreen.length) {
+        const n = onScreen[Math.floor(Math.random() * onScreen.length)];
+        stimulate(n.x, n.y, { arouse: false });
+      }
+      fireSpontaneously();
+    }, wait * 1000);
+  }
+  if (!reducedMotion) fireSpontaneously();
 
   function setTheme(isDark) {
     dark = isDark;
