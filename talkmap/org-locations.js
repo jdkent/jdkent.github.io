@@ -55,6 +55,11 @@ var addressPoints = [
     153.0235009
   ],
   [
+    "Neurosynth Compose: A platform for open and reproducible neuroimaging meta-analyses<br />Cognitive Neuroscience Society; Vancouver, Canada",
+    49.2608724,
+    -123.113952
+  ],
+  [
     "Measuring Communication between Brain Regions<br />University of Iowa Neuroscience Program; Iowa City, IA",
     41.6612561,
     -91.5299106
