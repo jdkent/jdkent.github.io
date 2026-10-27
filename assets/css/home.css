@@ -16,8 +16,22 @@
 
 /* Hero */
 
+/* Name, tagline and links, with the photo beside them. */
 .hero {
+  display: grid;
+  grid-template-columns: minmax(0, auto) auto;
+  justify-content: start;
+  align-items: center;
+  gap: 48px;
   margin-bottom: clamp(32px, 6vh, 56px);
+}
+
+.hero__photo {
+  width: clamp(152px, 17vw, 216px);
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 /* Sized to its text, so it morphs cleanly into the breadcrumb. */
@@ -285,24 +299,9 @@
   line-clamp: 2;
 }
 
-.lobe__example--about {
-  display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
-  align-items: center;
-  gap: 14px;
-}
-
 .lobe__example--about .lobe__example-detail {
   -webkit-line-clamp: 3;
   line-clamp: 3;
-}
-
-/* The whole photo, arm and lights included, not a crop of the face. */
-.lobe__portrait {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  object-fit: cover;
 }
 
 .lobe__foot {
@@ -519,19 +518,12 @@
 /* The bio */
 
 .sheet__about {
-  display: grid;
-  grid-template-columns: 200px minmax(0, var(--measure));
-  justify-content: center;
-  gap: 32px;
   padding: clamp(24px, 4vw, 44px);
 }
 
-.sheet__portrait {
-  width: 200px;
-  height: auto;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  object-fit: cover;
+.sheet__about-text {
+  max-width: var(--measure);
+  margin: 0 auto;
 }
 
 .sheet__about-text > :first-child {
@@ -575,6 +567,7 @@
 
 :root:not([data-zoomed]) .hero__tagline { view-transition-name: tagline; }
 :root:not([data-zoomed]) .hero__links { view-transition-name: hero-links; }
+:root:not([data-zoomed]) .hero__photo { view-transition-name: hero-photo; }
 :root:not([data-zoomed]) .lobes { view-transition-name: turntable; }
 :root[data-zoomed] .crumbs__section { view-transition-name: crumb-section; }
 :root[data-zoomed] .crumbs__item { view-transition-name: crumb-item; }
@@ -589,26 +582,27 @@
   animation-duration: 160ms;
 }
 
-/* Narrow screens: two columns of compact cards without JavaScript; the bio
-   portrait moves above the text. */
+/* Narrow screens: two columns of compact cards without JavaScript. */
 
 @media (max-width: 860px) {
   .lobes__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
+}
 
-  .sheet__about {
+@media (max-width: 600px) {
+  /* The photo moves above the name. */
+  .hero {
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
   }
 
-  .sheet__portrait {
-    width: 160px;
+  .hero__photo {
+    order: -1;
+    width: 112px;
   }
-}
 
-@media (max-width: 600px) {
   /* The breadcrumb drops below the theme switch. */
   .crumbs ol {
     padding: 64px 0 16px;
@@ -661,15 +655,6 @@
     font-size: 0.875rem;
   }
 
-  .lobe__example--about {
-    grid-template-columns: 60px minmax(0, 1fr);
-    gap: 12px;
-  }
-
-  .lobe__portrait {
-    width: 60px;
-    height: 60px;
-  }
 
   .entry {
     grid-template-columns: 2.75rem minmax(0, 1fr);

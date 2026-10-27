@@ -15,9 +15,13 @@
 
     <main class="page">
       <header class="hero">
-        <h1 class="hero__name" data-wave-origin>{{ site.name }}</h1>
-        <p class="hero__tagline">{{ page.tagline }}</p>
-        {% include site/icon-links.html class="hero__links" %}
+        <div class="hero__text">
+          <h1 class="hero__name" data-wave-origin>{{ site.name }}</h1>
+          <p class="hero__tagline">{{ page.tagline }}</p>
+          {% include site/icon-links.html class="hero__links" %}
+        </div>
+        <img class="hero__photo" src="{{ base_path }}/images/{{ author.avatar }}" width="720" height="720"
+             alt="Black-and-white photo of {{ author.name }} reaching up to touch one of a string of hanging light bulbs">
       </header>
 
       <section class="lobes" aria-label="Sections">
@@ -55,7 +59,6 @@
                 </a>
               {% elsif cat.key == "about" %}
                 <a class="lobe__example lobe__example--about" href="{{ more }}">
-                  <img class="lobe__portrait" src="{{ base_path }}/images/{{ author.avatar }}" width="720" height="720" alt="">
                   <span class="lobe__example-detail">{{ content | split: "</p>" | first | strip_html | truncatewords: 24 }}</span>
                 </a>
               {% elsif cat.pdf %}
@@ -97,8 +100,6 @@
       <div class="sheet" tabindex="-1">
         <section class="sheet__about" id="bio" aria-labelledby="about-heading">
           <h2 id="about-heading" class="visually-hidden">About</h2>
-          <img class="sheet__portrait" src="{{ base_path }}/images/{{ author.avatar }}" width="720" height="720"
-               alt="Black-and-white photo of {{ author.name }} reaching up to touch one of a string of hanging light bulbs" loading="lazy">
           <div class="sheet__about-text">
             {{ content }}
           </div>

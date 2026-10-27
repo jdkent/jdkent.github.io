@@ -237,6 +237,15 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && current.path !== null) go(`#${current.key}`);
 });
 
+// A click outside the sheet zooms out too, except on a link or button (the
+// breadcrumb, the theme switch) or on the turntable, whose click may be the
+// one zooming in.
+document.addEventListener("click", (event) => {
+  if (current.path === null || !plainClick(event)) return;
+  if (event.target.closest(".sheet, .lobes, a, button")) return;
+  go(`#${current.key}`);
+});
+
 // Pages in the sheet run site.js in embed mode, which hands their links,
 // presses and Escape to this page.
 window.addEventListener("message", (event) => {
