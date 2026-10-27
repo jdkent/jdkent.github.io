@@ -14,6 +14,7 @@ const NODE_RISE = 0.25;    // s glow time constants
 const NODE_DECAY = 1.0;
 const EDGE_DECAY = 1.6;
 const CLICK_ENERGY = 0.55;  // an isolated click's stimulus
+const WAVE_SPEED = 75;     // px/s along an axon, however fast the clicks come
 // Spontaneous firing: a random neuron on screen, at random intervals, four
 // times as strong as a click, so it blooms out across much of the screen.
 const SPONTANEOUS_MEAN = 20; // s between firings, on average
@@ -219,7 +220,7 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     for (let i = 0; i < count; i++) {
       const s = current[i];
       const e = edges[s.edge];
-      s.t += (s.wave.speed * dt) / e.len;
+      s.t += (WAVE_SPEED * dt) / e.len;
       e.heat = Math.max(e.heat, Math.min(1, s.energy) * Math.min(1, s.t * 1.5));
       if (s.t >= 1) fire(nodes[s.to], s.energy, s.wave);
       else alive.push(s);
@@ -314,7 +315,7 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     if (arouse) { drive += 1; arousal = drive; arousalAt = t; }
     // 0 for an isolated click, approaching 1 as clicks come faster.
     const a = 1 - Math.exp(-Math.max(0, drive - 1) / 1.8);
-    const wave = { x, y, gain: 0.64 + 0.33 * a, speed: 75 + 125 * a, fired: new Set() };
+    const wave = { x, y, gain: 0.64 + 0.33 * a, fired: new Set() };
     const energy = given ?? (arouse ? CLICK_ENERGY + 0.45 * a : 0.4);
     const nearest = nodes
       .map((n) => [Math.hypot(n.x - x, n.y - y), n])
