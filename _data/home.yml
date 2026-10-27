@@ -1,0 +1,58 @@
+# Category panels on the landing page, in display order.
+# `collection` names the Jekyll collection the panel lists; `limit` caps how
+# many of its newest items the panel previews before linking to `url`;
+# `dated` collections show a year beside each item.
+
+- key: projects
+  title: Projects
+  summary: Neurosynth, NiMARE, and the open tools around them.
+  collection: portfolio
+  noun: project
+  nouns: projects
+  url: /portfolio/
+
+- key: publications
+  title: Publications
+  summary: Papers on meta-analysis methods, fMRI preprocessing, and cognitive training.
+  collection: publications
+  noun: paper
+  nouns: papers
+  url: /publications/
+  dated: true
+  limit: 6
+
+- key: talks
+  title: Talks
+  summary: Conference talks, posters, and invited seminars.
+  collection: talks
+  noun: talk
+  nouns: talks
+  url: /talks/
+  dated: true
+  limit: 6
+
+- key: teaching
+  title: Teaching
+  summary: Workshops I have taught, assisted with, or organized.
+  collection: teaching
+  noun: workshop
+  nouns: workshops
+  url: /teaching/
+  dated: true
+  limit: 6
+
+- key: writing
+  title: Writing
+  summary: Notes on workflows, tooling, and building research software.
+  collection: posts
+  noun: post
+  nouns: posts
+  url: /year-archive/
+  dated: true
+  limit: 6
+
+- key: cv
+  title: CV
+  summary: Positions, education, and service, with a PDF copy.
+  url: /cv/
+  pdf: /files/James-Kent-CV.pdf
