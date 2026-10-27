@@ -5,5 +5,12 @@ permalink: /talkmap.html
 author_profile: true
 ---
 
-<p>This map is generated from a Jupyter Notebook file in <a href="https://github.com/academicpages/academicpages.github.io/blob/master/talkmap.ipynb">talkmap.ipynb</a>, which mines the location fields in the .md files in _talks/.</p>
-<iframe src="/talkmap/map.html" height="700" width="850" style="border:none;"></iframe>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<script defer src="{{ '/talkmap/org-locations.js' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/talkmap.js' | relative_url }}"></script>
+
+<p>Places I've given a talk, from the locations in <a href="https://github.com/jdkent/jdkent.github.io/tree/master/_talks">_talks/</a>. Click a cluster to zoom in, or a point to see the talk.</p>
+<div class="talkmap" id="talkmap" role="region" aria-label="Map of talk locations"></div>

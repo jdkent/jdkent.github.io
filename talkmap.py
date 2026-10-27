@@ -51,6 +51,5 @@ for file in g:
     except Exception as ex:
         print(f"An unhandled exception occurred while processing input {location} with message {ex}")
 
-# Save the map
-m = getorg.orgmap.create_map_obj()
-getorg.orgmap.output_html_cluster_map(location_dict, folder_name="talkmap", hashed_usernames=False)
+# Save the locations; the talk map page draws them
+getorg.orgmap.location_dict_to_jsvar(location_dict, "talkmap/org-locations.js", hashed_usernames=False)
