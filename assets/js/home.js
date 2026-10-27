@@ -130,12 +130,19 @@ lobes.forEach((lobe, i) => {
 // The arrow keys turn the turntable from anywhere on the main screen, a
 // panel per press, so quick presses add up; Home and End jump to the ends
 // when focus is on it. Focus on a panel follows the panel coming to the front.
+// Enter opens the front panel, unless focus is on a link or button, which
+// Enter activates instead.
 document.addEventListener("keydown", (event) => {
   if (current.path !== null || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
   if (event.target.closest("input, textarea, select, [contenteditable]")) return;
   const onRing = scene.contains(document.activeElement);
   const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
-  if (step) susan.spin(step);
+  if (event.key === "Enter") {
+    if (event.target.closest("a, button")) return;
+    const front = lobes[susan.target];
+    fireFrom(front);
+    go(`#${front.dataset.key}/`);
+  } else if (step) susan.spin(step);
   else if (onRing && (event.key === "Home" || event.key === "End")) susan.goTo(event.key === "Home" ? 0 : lobes.length - 1);
   else return;
   event.preventDefault();
