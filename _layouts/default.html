@@ -1,31 +1,21 @@
----
-layout: compress
----
-
 {% include base_path %}
-
 <!doctype html>
-<html lang="{{ site.locale | slice: 0,2 }}" class="no-js"{% if site.site_theme == "dark" %} data-theme="dark"{% endif %}>
+<html lang="{{ site.locale | slice: 0,2 }}">
   <head>
-    {% include head.html %}
-    {% include head/custom.html %}
+    {% include site/head.html %}
+    <link rel="stylesheet" href="{{ base_path }}/assets/css/main.css">
+    <link rel="stylesheet" href="{{ base_path }}/assets/css/pages.css">
+    <script type="module" src="{{ base_path }}/assets/js/site.js"></script>
   </head>
 
   <body>
-
-    {% include browser-upgrade.html %}
-    {% include masthead.html %}
+    <canvas class="field" aria-hidden="true"></canvas>
+    {% include site/header.html %}
 
     {{ content }}
 
-    <div class="page__footer">
-      <footer>
-        {% include footer/custom.html %}
-        {% include footer.html %}
-      </footer>
-    </div>
-
-    {% include scripts.html %}
-
+    {% include site/colophon.html icons=true %}
+    {% include footer/custom.html %}
+    {% include analytics.html %}
   </body>
 </html>

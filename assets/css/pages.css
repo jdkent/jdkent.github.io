@@ -1,0 +1,233 @@
+/* Pages other than home. The theme's layouts (single, talk, archive) and
+   main.css still render the content; this file points main.css's colour
+   variables at the site tokens and replaces its frame (masthead, sidebar
+   column, page background) with the site header and a glass sheet over the
+   neuron network. Loaded after main.css. */
+
+/* [data-theme] outranks main.css's html[data-theme="dark"] block. */
+:root,
+:root[data-theme] {
+  --global-base-color: var(--link);
+  --global-bg-color: var(--ground);
+  --global-footer-bg-color: transparent;
+  --global-border-color: var(--rule);
+  --global-dark-border-color: var(--rule-strong);
+  --global-code-background-color: color-mix(in srgb, var(--ink) 6%, transparent);
+  --global-code-text-color: var(--ink);
+  --global-fig-caption-color: var(--ink-soft);
+  --global-link-color: var(--link);
+  --global-link-color-hover: var(--link);
+  --global-link-color-visited: var(--link);
+  --global-masthead-link-color: var(--ink-soft);
+  --global-masthead-link-color-hover: var(--ink);
+  --global-text-color: var(--ink);
+  --global-text-color-light: var(--ink-soft);
+  --global-thead-color: color-mix(in srgb, var(--ink) 5%, transparent);
+  --global-selection-bg-color: var(--cmap-2);
+  --global-selection-text-color: #fff;
+  --global-toc-bg-color: var(--glass-solid);
+
+  /* Header, sheet and footer share this column, so their edges line up. */
+  --sheet-w: 840px;
+}
+
+/* main.css paints both html and body; only the root may, or the body's
+   background would cover the network. */
+html {
+  font-size: 16px;
+  background: var(--ground);
+}
+
+body {
+  padding: 0;
+  background: transparent;
+  font-family: var(--font-text);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Header */
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+  width: min(100%, calc(var(--sheet-w) + 2 * var(--gutter)));
+  margin: 0 auto;
+  padding: 20px var(--gutter) 28px;
+}
+
+.site-header__name {
+  color: var(--ink);
+  font: 500 1.375rem/1 var(--font-ui);
+  font-stretch: 118%;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-nav a {
+  display: block;
+  padding: 6px 0;
+  color: var(--ink-soft);
+  font: 500 0.9375rem/1.2 var(--font-ui);
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  color: var(--ink);
+}
+
+/* The current section carries the colormap, as the front panel does on home. */
+.site-nav a[aria-current] {
+  color: var(--ink);
+  background: var(--colorbar) left bottom / 100% 2px no-repeat;
+}
+
+.site-header .theme-switch {
+  margin-left: auto;
+}
+
+/* Sheet: the content, on glass over the network */
+
+#main {
+  max-width: var(--sheet-w);
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 48px);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--glass-solid);
+  animation: none;
+}
+
+/* The theme floats these into a grid beside the sidebar, which is gone. */
+#main .page,
+#main .archive {
+  float: none;
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.page__title {
+  margin: 0 0 0.5em;
+  font: 500 clamp(1.875rem, 4.5vw, 2.75rem) / 1.08 var(--font-ui);
+  font-stretch: 112%;
+  letter-spacing: -0.02em;
+}
+
+.page__meta,
+.page__date,
+.archive__item-title,
+.archive__subtitle,
+.page__taxonomy {
+  font-family: var(--font-ui);
+}
+
+.page__content {
+  font-size: 1em;
+}
+
+.page__content iframe {
+  max-width: 100%;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+}
+
+.page__content pre,
+.page__content table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* List titles read as text, with the accent on hover, as on home. */
+.archive__item-title a {
+  color: var(--ink);
+  text-decoration-color: var(--rule-strong);
+}
+
+.archive__item-title a:hover {
+  color: var(--link);
+  text-decoration-color: currentColor;
+}
+
+/* Code blocks: main.css's label sits on a fixed light-grey tile and asks for
+   a solid icon without its weight. */
+div.highlighter-rouge:before,
+figure.highlight:before {
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 900;
+}
+
+/* Share links: outlined in the site's colours, not each network's brand.
+   main.css sets .btn's colour and border with !important, so these must too. */
+.page__share-title {
+  font: 600 0.9375rem/1.3 var(--font-ui);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.page__share .btn,
+.page__share .btn:visited {
+  border: 1px solid var(--rule) !important;
+  background: transparent;
+  color: var(--ink-soft) !important;
+  font-family: var(--font-ui);
+  font-weight: 500;
+}
+
+.page__share .btn:hover {
+  border-color: var(--rule-strong) !important;
+  background: transparent;
+  color: var(--link) !important;
+}
+
+/* Footer: icon links above the line, since these pages have no bio. */
+
+.colophon {
+  width: min(100%, calc(var(--sheet-w) + 2 * var(--gutter)));
+}
+
+.colophon__links {
+  margin: 0 0 8px -10px;
+}
+
+@media (max-width: 760px) {
+  .site-header {
+    gap: 10px 16px;
+  }
+
+  /* Name and theme switch share the first row; the nav scrolls below them. */
+  .site-nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .site-nav ul {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  #main {
+    border-inline: 0;
+    border-radius: 0;
+  }
+}

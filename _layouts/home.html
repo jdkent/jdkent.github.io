@@ -3,25 +3,7 @@
 <!doctype html>
 <html lang="{{ site.locale | slice: 0,2 }}">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script>
-      // Resolve the theme before first paint; shares the "theme" key with the rest of the site.
-      (function () {
-        var theme;
-        try { theme = localStorage.getItem("theme"); } catch (e) {}
-        if (theme !== "dark" && theme !== "light") {
-          theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        }
-        document.documentElement.setAttribute("data-theme", theme);
-      })();
-    </script>
-    {% include seo.html %}
-    {% include head/custom.html %}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@75..125,300..700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..600;1,8..60,400&display=swap">
-    <link rel="stylesheet" href="{{ base_path }}/assets/css/icons.css">
+    {% include site/head.html %}
     <link rel="stylesheet" href="{{ base_path }}/assets/css/home.css">
     <script type="module" src="{{ base_path }}/assets/js/home.js"></script>
   </head>
@@ -33,7 +15,7 @@
 
     <main class="page">
       <header class="hero">
-        <h1 class="hero__name">{{ site.name }}</h1>
+        <h1 class="hero__name" data-wave-origin>{{ site.name }}</h1>
         <p class="hero__tagline">{{ page.tagline }}</p>
       </header>
 
@@ -103,21 +85,11 @@
              alt="{{ author.name }} grinning behind a small pumpkin, wearing a patterned bucket hat" loading="lazy">
         <div class="bio__text">
           {{ content }}
-          <ul class="links" aria-label="Elsewhere">
-            {% if author.email %}<li><a href="mailto:{{ author.email }}" aria-label="Email" title="Email"><i class="fas fa-envelope" aria-hidden="true"></i></a></li>{% endif %}
-            {% if author.github %}<li><a href="https://github.com/{{ author.github }}" aria-label="GitHub" title="GitHub"><i class="fab fa-github" aria-hidden="true"></i></a></li>{% endif %}
-            {% if author.googlescholar %}<li><a href="{{ author.googlescholar }}" aria-label="Google Scholar" title="Google Scholar"><i class="ai ai-google-scholar" aria-hidden="true"></i></a></li>{% endif %}
-            {% if author.orcid %}<li><a href="{{ author.orcid }}" aria-label="ORCID" title="ORCID"><i class="ai ai-orcid" aria-hidden="true"></i></a></li>{% endif %}
-            {% if author.bluesky %}<li><a href="https://bsky.app/profile/{{ author.bluesky }}" aria-label="Bluesky" title="Bluesky"><i class="fab fa-bluesky" aria-hidden="true"></i></a></li>{% endif %}
-            {% if author.linkedin %}<li><a href="https://www.linkedin.com/in/{{ author.linkedin }}" aria-label="LinkedIn" title="LinkedIn"><i class="fab fa-linkedin" aria-hidden="true"></i></a></li>{% endif %}
-            {% if author.youtube %}<li><a href="https://www.youtube.com/@{{ author.youtube }}" aria-label="YouTube" title="YouTube"><i class="fab fa-youtube" aria-hidden="true"></i></a></li>{% endif %}
-          </ul>
+          {% include site/icon-links.html %}
         </div>
       </section>
     </main>
 
-    <footer class="colophon">
-      <p>&copy; {{ site.time | date: "%Y" }} {{ site.name }}. Built with Jekyll. <a href="{{ base_path }}/sitemap/">Sitemap</a></p>
-    </footer>
+    {% include site/colophon.html %}
   </body>
 </html>

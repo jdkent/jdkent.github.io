@@ -1,0 +1,21 @@
+{% comment %}Header for pages other than home: the name links home, the nav marks the
+current section, and the theme switch sits at the end.{% endcomment %}
+{% include base_path %}
+{% comment %}A collection item (a talk, a post) marks its section's list page; `where`
+with an empty value would match every entry, so only look one up for items.{% endcomment %}
+{% assign section = nil %}
+{% if page.collection %}{% assign section = site.data.home | where: "collection", page.collection | first %}{% endif %}
+<header class="site-header">
+  <a class="site-header__name" href="{{ base_path }}/" data-wave-origin>{{ site.name }}</a>
+  <nav class="site-nav" aria-label="Sections">
+    <ul>
+      {% for link in site.data.navigation.main %}
+        {% unless link.url == "/" %}
+          {% if page.url == link.url or section.url == link.url %}{% assign current = true %}{% else %}{% assign current = false %}{% endif %}
+          <li><a href="{{ link.url | relative_url }}"{% if current %} aria-current="{% if page.url == link.url %}page{% else %}true{% endif %}"{% endif %}>{{ link.title }}</a></li>
+        {% endunless %}
+      {% endfor %}
+    </ul>
+  </nav>
+  <button class="theme-switch" type="button" hidden>Use dark theme</button>
+</header>

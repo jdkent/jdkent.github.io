@@ -1,151 +1,10 @@
-/* Landing page. Light is a white glass brain; dark is a black-background one. */
-
-:root {
-  --ground: #fbfcfd;
-  --ink: #17202b;
-  --ink-soft: #4a5563;
-  --rule: rgba(23, 32, 43, 0.14);
-  --rule-strong: rgba(23, 32, 43, 0.32);
-  --glass: rgba(251, 252, 253, 0.56);
-  --glass-solid: rgba(251, 252, 253, 0.9);
-  --link: #9d2a6c;
-  --focus: #d5446d;
-  --net-axon: rgba(74, 85, 99, 0.17);
-  --net-soma: rgba(74, 85, 99, 0.38);
-  /* Neuron colormap (matplotlib's magma), low to high activation;
-     neural-field.js reads these and the colorbar draws them. Ordered so higher
-     activation contrasts more with the ground: magma reversed on white, magma
-     on black. Links take a colour from the same map. */
-  --cmap-0: #fcd5c0;
-  --cmap-1: #f7856b;
-  --cmap-2: #d5446d;
-  --cmap-3: #8c2981;
-  --cmap-4: #3b0f70;
-  --colorbar: linear-gradient(90deg, var(--cmap-0), var(--cmap-1), var(--cmap-2), var(--cmap-3), var(--cmap-4));
-
-  /* Mona Sans (GitHub's open-source typeface, with a width axis) for the name
-     and interface; Source Serif 4 for reading. */
-  --font-ui: "Mona Sans", system-ui, sans-serif;
-  --font-text: "Source Serif 4", Georgia, serif;
-  --measure: 66ch;
-  --gutter: clamp(16px, 4vw, 48px);
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ground: #000;
-    --ink: #e9edf2;
-    --ink-soft: #a3adb9;
-    --rule: rgba(233, 237, 242, 0.14);
-    --rule-strong: rgba(233, 237, 242, 0.34);
-    --glass: rgba(14, 17, 22, 0.5);
-    --glass-solid: rgba(8, 10, 13, 0.88);
-    --link: #f590ab;
-    --focus: #fe9f6d;
-    --net-axon: rgba(200, 210, 222, 0.13);
-    --net-soma: rgba(200, 210, 222, 0.3);
-    --cmap-0: #3b0f70;
-    --cmap-1: #8c2981;
-    --cmap-2: #de4968;
-    --cmap-3: #fe9f6d;
-    --cmap-4: #fde4cf;
-    color-scheme: dark;
-  }
-}
-
-:root[data-theme="dark"] {
-  --ground: #000;
-  --ink: #e9edf2;
-  --ink-soft: #a3adb9;
-  --rule: rgba(233, 237, 242, 0.14);
-  --rule-strong: rgba(233, 237, 242, 0.34);
-  --glass: rgba(14, 17, 22, 0.5);
-  --glass-solid: rgba(8, 10, 13, 0.88);
-  --link: #f590ab;
-  --focus: #fe9f6d;
-  --net-axon: rgba(200, 210, 222, 0.13);
-  --net-soma: rgba(200, 210, 222, 0.3);
-  --cmap-0: #3b0f70;
-  --cmap-1: #8c2981;
-  --cmap-2: #de4968;
-  --cmap-3: #fe9f6d;
-  --cmap-4: #fde4cf;
-  color-scheme: dark;
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: var(--ground);
-  color: var(--ink);
-  font-family: var(--font-text);
-  font-size: 1.0625rem;
-  line-height: 1.65;
-  -webkit-font-smoothing: antialiased;
-}
-
-a {
-  color: var(--link);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.18em;
-}
-
-a:hover {
-  text-decoration-thickness: 2px;
-}
-
-:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
-}
-
-[hidden] {
-  display: none !important;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* The network sits fixed behind everything, sized to the large viewport so
-   mobile address-bar changes do not stretch it. */
-.field {
-  position: fixed;
-  inset: 0 auto auto 0;
-  width: 100vw;
-  height: 100vh;
-  height: 100lvh;
-  z-index: -1;
-  pointer-events: none;
-}
+/* Landing page: hero, the lazy-susan menu, its stage and the bio. Shared
+   tokens and elements are in base.css. */
 
 .theme-switch {
   position: absolute;
   top: 16px;
   right: var(--gutter);
-  padding: 6px 12px;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: var(--glass-solid);
-  color: var(--ink-soft);
-  font: 500 0.8125rem/1.2 var(--font-ui);
-  cursor: pointer;
-}
-
-.theme-switch:hover {
-  color: var(--ink);
-  border-color: var(--rule-strong);
 }
 
 .page {
@@ -504,51 +363,14 @@ a:hover {
   font-weight: 600;
 }
 
-.bio__text .links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+.bio__text .icon-links {
   margin: 1.75rem 0 0 -10px;
   padding: 1rem 0 0;
   border-top: 1px solid var(--rule);
-  list-style: none;
 }
 
-.bio__text .links li + li {
+.bio__text .icon-links li + li {
   margin-top: 0;
-}
-
-/* Icon-only links: 44px targets, named by aria-label and a hover title. */
-.bio__text .links a {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  color: var(--ink-soft);
-  font-size: 1.375rem;
-  text-decoration: none;
-  transition: color 160ms ease;
-}
-
-.bio__text .links a:hover {
-  color: var(--link);
-}
-
-.colophon {
-  width: min(100%, 1080px);
-  margin: 0 auto;
-  padding: 32px var(--gutter) 40px;
-  color: var(--ink-soft);
-  font: 400 0.8125rem/1.5 var(--font-ui);
-}
-
-.colophon p {
-  margin: 0;
-}
-
-.colophon a {
-  color: inherit;
 }
 
 /* Narrow screens: two columns of compact panels, so a thumb can tap through

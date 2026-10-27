@@ -1,0 +1,6 @@
+{% comment %}Site footer. Param: icons (true to show the icon links, for pages without the bio).{% endcomment %}
+{% include base_path %}
+<footer class="colophon">
+  {% if include.icons %}{% include site/icon-links.html class="colophon__links" %}{% endif %}
+  <p>&copy; {{ site.time | date: "%Y" }} {{ site.name }}. Built with Jekyll. <a href="{{ base_path }}/sitemap/">Sitemap</a></p>
+</footer>

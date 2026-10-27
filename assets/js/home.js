@@ -1,46 +1,5 @@
 import { createLazySusan } from "./lazy-susan.js";
-import { createNeuralField } from "./neural-field.js";
-
-const root = document.documentElement;
-const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const field = createNeuralField(document.querySelector(".field"), {
-  reducedMotion,
-  // On slow rendering, drop the panels' blur too: it is re-blurred every frame.
-  onSlow: () => root.setAttribute("data-low-power", ""),
-});
-
-// Theme: the same "theme" localStorage key the rest of the site uses.
-const themeSwitch = document.querySelector(".theme-switch");
-
-function applyTheme(theme) {
-  root.setAttribute("data-theme", theme);
-  themeSwitch.textContent = theme === "dark" ? "Use light theme" : "Use dark theme";
-  field.setTheme(theme === "dark");
-}
-
-themeSwitch.hidden = false;
-themeSwitch.addEventListener("click", () => {
-  const theme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-  try { localStorage.setItem("theme", theme); } catch (e) {}
-  applyTheme(theme);
-});
-applyTheme(root.getAttribute("data-theme") === "dark" ? "dark" : "light");
-field.build();
-
-// Rebuild only on real size changes; mobile browsers resize the viewport
-// height as the address bar slides, which should not reshuffle the network.
-let size = [window.innerWidth, window.innerHeight];
-let resizeTimer = 0;
-window.addEventListener("resize", () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    const [w, h] = size;
-    if (window.innerWidth !== w || Math.abs(window.innerHeight - h) > h * 0.25) {
-      size = [window.innerWidth, window.innerHeight];
-      field.build();
-    }
-  }, 150);
-});
+import { field, reducedMotion } from "./site.js";
 
 // Panels: links without JavaScript, a turntable of tabs with it. The panel at
 // the front is the selected tab, and its list shows in the stage below.
@@ -80,11 +39,6 @@ function fireFrom(tab) {
   const box = tab.getBoundingClientRect();
   field.stimulate(box.left + box.width / 2, box.top + box.height / 2);
 }
-
-// Any press anywhere on the page fires the network where it lands.
-document.addEventListener("pointerdown", (event) => {
-  if (event.isPrimary && event.button === 0) field.stimulate(event.clientX, event.clientY);
-});
 
 nav.classList.add("is-ring");
 nav.querySelector(".lobes__controls").hidden = false;
@@ -133,7 +87,3 @@ const initial = tabs.find((t) => `#${t.dataset.key}` === location.hash) || tabs[
 select(initial);
 susan.goTo(tabs.indexOf(initial), { instant: true });
 ready = true;
-
-// One quiet wave from the name on load, to show the network is there.
-const name = document.querySelector(".hero__name").getBoundingClientRect();
-setTimeout(() => field.stimulate(name.left + 24, name.top + name.height / 2, { arouse: false }), 500);
