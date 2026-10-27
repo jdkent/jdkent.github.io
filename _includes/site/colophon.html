@@ -2,5 +2,5 @@
 {% include base_path %}
 <footer class="colophon">
   {% if include.icons %}{% include site/icon-links.html class="colophon__links" %}{% endif %}
-  <p>&copy; {{ site.time | date: "%Y" }} {{ site.name }}. Built with Jekyll. <a href="{{ base_path }}/sitemap/">Sitemap</a></p>
+  <p>&copy; {{ site.time | date: "%Y" }} {{ site.name }}. <span class="colophon__built">Built with Jekyll.</span> <a href="{{ base_path }}/sitemap/">Sitemap</a></p>
 </footer>

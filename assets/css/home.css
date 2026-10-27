@@ -8,10 +8,26 @@
   z-index: 2;
 }
 
+/* The main screen fits the window: hero and turntable size to its height
+   and sit centered in it, with the footer at the bottom. */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
 .page {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  justify-content: center;
   width: min(100%, 1080px);
   margin: 0 auto;
-  padding: clamp(72px, 14vh, 152px) var(--gutter) 0;
+  padding: clamp(24px, 5vh, 72px) var(--gutter) 0;
+}
+
+.colophon {
+  padding-block: 8px 16px;
 }
 
 /* Hero */
@@ -23,11 +39,11 @@
   justify-content: start;
   align-items: center;
   gap: 48px;
-  margin-bottom: clamp(32px, 6vh, 56px);
+  margin-bottom: clamp(16px, 4vh, 56px);
 }
 
 .hero__photo {
-  width: clamp(152px, 17vw, 216px);
+  width: clamp(120px, min(17vw, 22vh), 216px);
   height: auto;
   aspect-ratio: 1;
   border-radius: 50%;
@@ -38,7 +54,7 @@
 .hero__name {
   width: fit-content;
   margin: 0;
-  font: 500 clamp(2.375rem, 7vw, 4.75rem) / 1 var(--font-ui);
+  font: 500 clamp(2.375rem, min(7vw, 8.5vh), 4.75rem) / 1 var(--font-ui);
   font-stretch: 118%;
   letter-spacing: -0.02em;
 }
@@ -113,12 +129,14 @@
 /* Turntable. The scene holds the perspective; the grid becomes the ring,
    which lazy-susan.js rotates, and each panel has a front and a back face. */
 
+/* Panels keep their full size where the window has the height, and shrink
+   (keeping their shape) where it does not. */
 .lobes.is-ring {
-  --lobe-w: clamp(260px, 40vw, 456px);
-  --lobe-h: 252px;
-  --ring-top: 104px;
+  --lobe-h: clamp(200px, 28vh, 252px);
+  --lobe-w: clamp(260px, min(40vw, var(--lobe-h) * 1.8), 456px);
+  --ring-top: clamp(64px, 10vh, 104px);
   position: relative;
-  height: calc(var(--ring-top) + var(--lobe-h) + var(--radius, 300px) * 0.16 + 76px);
+  height: calc(var(--ring-top) + var(--lobe-h) + var(--radius, 300px) * 0.16 + 64px);
   /* Bleed into the gutters so side panels are clipped by the screen edge, not the column. */
   margin-inline: calc(var(--gutter) * -1);
   perspective: 1300px;
@@ -165,6 +183,8 @@
 .is-ring .lobe__face {
   position: absolute;
   inset: 0;
+  /* Panels shrink on short windows; their contents tighten to match (below). */
+  container: lobe / size;
   display: flex;
   flex-direction: column;
   -webkit-backface-visibility: hidden;
@@ -592,15 +612,41 @@
 }
 
 @media (max-width: 600px) {
-  /* The photo moves above the name. */
+  /* The photo sits beside the name, with the tagline and links below. */
   .hero {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name photo" "tagline tagline" "links links";
+    gap: 12px 16px;
   }
 
+  .hero__text {
+    display: contents;
+  }
+
+  .hero__name { grid-area: name; }
+  .hero__tagline { grid-area: tagline; margin: 0; }
+  .hero__links { grid-area: links; margin: 0 0 0 -11px; }
+
   .hero__photo {
-    order: -1;
-    width: 112px;
+    grid-area: photo;
+    width: 64px;
+  }
+
+  /* The theme switch moves to the foot of the screen, beside a shorter
+     footer, leaving the top to the name and photo. Zoomed in, it stays
+     at the top, clear of the sheet. */
+  .theme-switch {
+    top: auto;
+    bottom: 12px;
+  }
+
+  :root[data-zoomed] .theme-switch {
+    top: 16px;
+    bottom: auto;
+  }
+
+  .colophon__built {
+    display: none;
   }
 
   /* The breadcrumb drops below the theme switch. */
@@ -622,8 +668,17 @@
 
   .lobes.is-ring {
     --lobe-w: 264px;
-    --lobe-h: 212px;
-    --ring-top: 80px;
+    --lobe-h: clamp(188px, 26vh, 212px);
+    --ring-top: clamp(56px, 9vh, 80px);
+    height: calc(var(--ring-top) + var(--lobe-h) + var(--radius, 300px) * 0.16 + 56px);
+  }
+
+  .page {
+    padding-top: clamp(16px, 4vh, 72px);
+  }
+
+  .hero {
+    margin-bottom: clamp(12px, 3vh, 56px);
   }
 
   .is-ring .lobe__face {
@@ -659,6 +714,55 @@
   .entry {
     grid-template-columns: 2.75rem minmax(0, 1fr);
     column-gap: 12px;
+  }
+}
+
+/* Short panels, on short windows: tighter type and spacing, and a one-line
+   example, so the contents still fit. Heights are inside the padding; a
+   full-size panel has 206px, a full-size phone panel 178px. */
+@container lobe (max-height: 179px) and (min-width: 280px) {
+  .lobe__head {
+    gap: 12px;
+  }
+
+  .lobe__icon,
+  .lobe__title {
+    font-size: 2rem;
+  }
+
+  .lobe__example {
+    margin-top: 12px;
+    padding: 8px 12px 9px;
+  }
+
+  .lobe__example-detail {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .lobe__example--about .lobe__example-detail {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+}
+
+@container lobe (max-height: 160px) {
+  .lobe__icon,
+  .lobe__title {
+    font-size: 1.75rem;
+  }
+
+  .lobe__example {
+    margin-top: 10px;
+  }
+
+  .lobe__example-detail {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .lobe__foot {
+    padding-top: 10px;
   }
 }
 
