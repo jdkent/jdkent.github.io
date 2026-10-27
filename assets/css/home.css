@@ -484,6 +484,19 @@ body {
   opacity: 0;
 }
 
+/* A profile elsewhere, above a section's list. */
+.sheet__elsewhere {
+  max-width: 76ch;
+  margin: 0 auto 20px;
+  font: 600 0.9375rem/1.3 var(--font-ui);
+}
+
+.sheet__elsewhere i {
+  margin-right: 8px;
+  font-size: 1.125rem;
+  vertical-align: -0.1em;
+}
+
 .entries {
   margin: 0 auto;
   max-width: 76ch;

@@ -248,7 +248,8 @@ sectionCrumb.addEventListener("click", (event) => {
 
 listHost.addEventListener("click", (event) => {
   const link = event.target.closest("a");
-  if (!link || !plainClick(event)) return;
+  // Links to other sites (a profile above the list) open as they are.
+  if (!link || !plainClick(event) || link.origin !== location.origin) return;
   event.preventDefault();
   go(hashFor(pathOf(link.href), current.key));
 });

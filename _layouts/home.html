@@ -108,6 +108,11 @@
           {% if cat.collection %}
             {% assign docs = site[cat.collection] | sort: "date" | reverse %}
             <template data-list="{{ cat.key }}">
+              {% if cat.elsewhere %}
+                <p class="sheet__elsewhere">
+                  <a href="{{ site.author[cat.elsewhere.profile] }}" target="_blank" rel="noopener"><i class="{{ cat.elsewhere.icon }}" aria-hidden="true"></i>{{ cat.elsewhere.label }}</a>
+                </p>
+              {% endif %}
               <ol class="entries">
                 {% for item in docs %}
                   {% include home/entry.html item=item dated=cat.dated %}

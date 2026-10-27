@@ -2,7 +2,9 @@
 # newest item (or, for About, the bio's opening) and zooms into the full list.
 # `collection` names the Jekyll collection the panel lists; `dated`
 # collections show a year beside each item; `url` is where the panel's "See
-# more" leads without JavaScript; `icon` is a Font Awesome solid icon name.
+# more" leads without JavaScript; `icon` is a Font Awesome solid icon name;
+# `elsewhere` adds a link above the zoomed list to the author profile named
+# by `profile` in _config.yml.
 
 - key: about
   title: About
@@ -25,6 +27,10 @@
   nouns: papers
   url: /publications/
   dated: true
+  elsewhere:
+    profile: googlescholar
+    label: All publications on Google Scholar
+    icon: ai ai-google-scholar
 
 - key: talks
   title: Talks
