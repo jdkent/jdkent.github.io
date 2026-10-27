@@ -41,7 +41,6 @@
             <span class="lobe__face lobe__face--front">
               <i class="lobe__icon fas fa-{{ cat.icon }}" aria-hidden="true"></i>
               <span class="lobe__title">{{ cat.title }}</span>
-              <span class="lobe__summary">{{ cat.summary }}</span>
               <span class="lobe__meta">
                 {% if docs.size > 0 %}
                   {{ docs.size }} {% if docs.size == 1 %}{{ cat.noun }}{% else %}{{ cat.nouns }}{% endif %}{% if cat.dated %}{% assign newest = docs | first %}{% assign oldest = docs | last %}{% assign y0 = oldest.date | date: "%Y" %}{% assign y1 = newest.date | date: "%Y" %}, <span class="lobe__years">{{ y0 }}{% if y1 != y0 %}–{{ y1 }}{% endif %}</span>{% endif %}
