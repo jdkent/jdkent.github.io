@@ -34,6 +34,12 @@
   line-height: 1.5;
 }
 
+/* Pulled left by the gap between each 44px target and its glyph, so the
+   first icon lines up with the name. */
+.hero__links {
+  margin: 1.1rem 0 0 -11px;
+}
+
 /* Panels. Without JavaScript they are a 3 x 2 grid of links; with it they
    stand around a turntable (.is-ring) that spins one panel to the front. */
 
@@ -361,16 +367,6 @@
 
 .bio__text strong {
   font-weight: 600;
-}
-
-.bio__text .icon-links {
-  margin: 1.75rem 0 0 -10px;
-  padding: 1rem 0 0;
-  border-top: 1px solid var(--rule);
-}
-
-.bio__text .icon-links li + li {
-  margin-top: 0;
 }
 
 /* Narrow screens: two columns of compact panels, so a thumb can tap through

@@ -17,6 +17,7 @@
       <header class="hero">
         <h1 class="hero__name" data-wave-origin>{{ site.name }}</h1>
         <p class="hero__tagline">{{ page.tagline }}</p>
+        {% include site/icon-links.html class="hero__links" %}
       </header>
 
       <nav class="lobes" aria-label="Profile sections">
@@ -85,7 +86,6 @@
              alt="{{ author.name }} grinning behind a small pumpkin, wearing a patterned bucket hat" loading="lazy">
         <div class="bio__text">
           {{ content }}
-          {% include site/icon-links.html %}
         </div>
       </section>
     </main>
