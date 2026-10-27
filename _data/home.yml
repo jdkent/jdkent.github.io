@@ -1,8 +1,13 @@
-# Category panels on the landing page, in display order.
-# `collection` names the Jekyll collection the panel lists; `limit` caps how
-# many of its newest items the panel previews before linking to `url`;
-# `dated` collections show a year beside each item; `icon` is a Font Awesome
-# solid icon name.
+# Panels on the landing page's turntable, in display order. Each shows its
+# newest item (or, for About, the bio's opening) and zooms into the full list.
+# `collection` names the Jekyll collection the panel lists; `dated`
+# collections show a year beside each item; `url` is where the panel's "See
+# more" leads without JavaScript; `icon` is a Font Awesome solid icon name.
+
+- key: about
+  title: About
+  icon: user
+  url: "#bio"
 
 - key: projects
   title: Projects
@@ -20,7 +25,6 @@
   nouns: papers
   url: /publications/
   dated: true
-  limit: 6
 
 - key: talks
   title: Talks
@@ -30,7 +34,6 @@
   nouns: talks
   url: /talks/
   dated: true
-  limit: 6
 
 - key: teaching
   title: Teaching
@@ -40,7 +43,6 @@
   nouns: workshops
   url: /teaching/
   dated: true
-  limit: 6
 
 - key: writing
   title: Writing
@@ -50,7 +52,6 @@
   nouns: posts
   url: /year-archive/
   dated: true
-  limit: 6
 
 - key: cv
   title: CV

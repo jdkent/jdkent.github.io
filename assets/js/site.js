@@ -5,11 +5,42 @@ import { createNeuralField } from "./neural-field.js";
 
 const root = document.documentElement;
 export const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-export const field = createNeuralField(document.querySelector(".field"), {
-  reducedMotion,
-  // On slow rendering, drop blurred glass too: it is re-blurred every frame.
-  onSlow: () => root.setAttribute("data-low-power", ""),
-});
+
+// A page shown inside the home page's zoomed panel (data-embed, set in
+// site/head.html) has no network of its own: its presses fire the home
+// page's, and its links open in the panel.
+const embedded = root.hasAttribute("data-embed");
+const toHome = (message) => window.parent.postMessage(message, location.origin);
+
+export const field = embedded
+  ? { build() {}, setTheme() {}, stimulate: (x, y) => toHome({ type: "stimulate", x, y }) }
+  : createNeuralField(document.querySelector(".field"), {
+      reducedMotion,
+      // On slow rendering, drop blurred glass too: it is re-blurred every frame.
+      onSlow: () => root.setAttribute("data-low-power", ""),
+    });
+
+if (embedded) {
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a[href]");
+    if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    const url = new URL(link.href);
+    const samePage = url.pathname === location.pathname && url.hash;
+    const isPage = !/\.\w+$/.test(url.pathname) || url.pathname.endsWith(".html");
+    if (samePage || url.protocol === "mailto:") return;
+    if (url.origin === location.origin && isPage && !link.target) {
+      event.preventDefault();
+      toHome({ type: "open", href: url.href });
+    } else {
+      // Other sites and files open in a new tab, not inside the panel.
+      link.target = "_blank";
+      link.rel = "noopener";
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") toHome({ type: "escape" });
+  });
+}
 
 // Theme: the same "theme" localStorage key the rest of the site uses.
 const themeSwitch = document.querySelector(".theme-switch");
@@ -52,7 +83,7 @@ document.addEventListener("pointerdown", (event) => {
 // One quiet wave from the element marked data-wave-origin (the name) on load,
 // to show the network is there.
 const origin = document.querySelector("[data-wave-origin]");
-if (origin) {
+if (origin && !embedded) {
   const box = origin.getBoundingClientRect();
   setTimeout(() => field.stimulate(box.left + 24, box.top + box.height / 2, { arouse: false }), 500);
 }

@@ -1,17 +1,10 @@
-{% comment %}One item in a landing-page panel list. Params: item, dated.{% endcomment %}
+{% comment %}One item in a panel's list. Params: item, dated.{% endcomment %}
 {% assign item = include.item %}
-{% assign details = "" | split: "" %}
-{% if item.type %}{% assign details = details | push: item.type %}{% endif %}
-{% if item.venue %}{% assign details = details | push: item.venue %}{% endif %}
-{% if item.location %}{% assign details = details | push: item.location %}{% endif %}
+{% capture detail %}{% include home/detail.html item=item %}{% endcapture %}
 <li class="entry">
   {% if include.dated %}<time class="entry__year" datetime="{{ item.date | date: '%Y-%m-%d' }}">{{ item.date | date: '%Y' }}</time>{% endif %}
   <div class="entry__body">
     <a class="entry__title" href="{{ item.url | relative_url }}">{{ item.title }}</a>
-    {% if details.size > 0 %}
-      <p class="entry__detail">{{ details | join: ", " }}</p>
-    {% elsif item.collection == "portfolio" and item.excerpt %}
-      <p class="entry__detail">{{ item.excerpt | strip_html | strip }}</p>
-    {% endif %}
+    {% assign detail = detail | strip %}{% if detail != "" %}<p class="entry__detail">{{ detail }}</p>{% endif %}
   </div>
 </li>

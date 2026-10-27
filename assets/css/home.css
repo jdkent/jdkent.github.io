@@ -1,10 +1,11 @@
-/* Landing page: hero, the lazy-susan menu, its stage and the bio. Shared
-   tokens and elements are in base.css. */
+/* Landing page: hero, the lazy-susan menu, and the panel it zooms into.
+   Shared tokens and elements are in base.css. */
 
 .theme-switch {
   position: absolute;
   top: 16px;
   right: var(--gutter);
+  z-index: 2;
 }
 
 .page {
@@ -19,7 +20,9 @@
   margin-bottom: clamp(32px, 6vh, 56px);
 }
 
+/* Sized to its text, so it morphs cleanly into the breadcrumb. */
 .hero__name {
+  width: fit-content;
   margin: 0;
   font: 500 clamp(2.375rem, 7vw, 4.75rem) / 1 var(--font-ui);
   font-stretch: 118%;
@@ -40,8 +43,8 @@
   margin: 1.1rem 0 0 -11px;
 }
 
-/* Panels. Without JavaScript they are a 3 x 2 grid of links; with it they
-   stand around a turntable (.is-ring) that spins one panel to the front. */
+/* Panels. Without JavaScript they are a grid of cards; with it they stand
+   around a turntable (.is-ring) that spins one panel to the front. */
 
 .lobes__grid {
   display: grid;
@@ -56,10 +59,9 @@
   min-height: 208px;
   border-radius: 6px;
   color: var(--ink);
-  text-decoration: none;
 }
 
-/* The glass: the whole link in the grid, each front face on the turntable.
+/* The glass: the whole card in the grid, each front face on the turntable.
    Every blurred layer is re-blurred each frame the network animates behind
    it, so blur is kept to these panels; other surfaces use opaque fills. */
 .lobes:not(.is-ring) .lobe,
@@ -81,9 +83,8 @@
   background: var(--glass-solid);
 }
 
-.lobes:not(.is-ring) .lobe:hover,
 .is-ring .lobe:hover .lobe__face,
-.is-ring .lobe[aria-selected="true"] .lobe__face {
+.is-ring .lobe[data-front] .lobe__face {
   border-color: var(--rule-strong);
 }
 
@@ -138,6 +139,11 @@
   -webkit-user-drag: none;
 }
 
+/* The front panel opens on a click anywhere; the others turn to the front. */
+.is-ring .lobe {
+  cursor: pointer;
+}
+
 .is-ring .lobe__face--back {
   pointer-events: none;
 }
@@ -178,7 +184,7 @@
   transition: transform 240ms ease-out;
 }
 
-.is-ring .lobe[aria-selected="true"] .lobe__face--front::after {
+.is-ring .lobe[data-front] .lobe__face--front::after {
   transform: scaleX(1);
 }
 
@@ -208,33 +214,106 @@
   border-color: var(--rule-strong);
 }
 
+/* Panel face: icon and title, the newest item, then the count and the way in. */
+
+.lobe__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+}
+
 /* The icon takes the accent on the panel at the front, as the colorbar does. */
 .lobe__icon {
-  margin-bottom: 18px;
   color: var(--ink-soft);
-  font-size: 3rem;
+  font-size: 2.5rem;
   line-height: 1;
   transition: color 160ms ease;
 }
 
 .lobe__face--back .lobe__icon {
-  margin: 0;
   font-size: 2.75rem;
 }
 
 .lobe:hover .lobe__face--front .lobe__icon,
-.lobe[aria-selected="true"] .lobe__icon {
+.lobe[data-front] .lobe__icon,
+.lobes:not(.is-ring) .lobe__icon {
   color: var(--link);
 }
 
 .lobe__title {
-  font: 600 2.75rem/1.05 var(--font-ui);
+  font: 600 2.5rem/1.05 var(--font-ui);
   letter-spacing: -0.02em;
 }
 
-.lobe__meta {
-  margin-top: auto;
+.lobe__example {
+  display: block;
+  margin-top: 18px;
+  padding: 10px 14px 11px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 160ms ease;
+}
+
+.lobe__example:hover {
+  border-color: var(--rule-strong);
+}
+
+.lobe__example-title {
+  display: block;
+  overflow: hidden;
+  font: 600 1.0625rem/1.4 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lobe__example:hover .lobe__example-title {
+  color: var(--link);
+}
+
+.lobe__example-detail {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.lobe__example--about {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.lobe__example--about .lobe__example-detail {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.lobe__portrait {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.lobe__foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: auto 0 0;
   padding-top: 14px;
+}
+
+.lobe__meta {
   color: var(--ink-soft);
   font: 500 0.875rem/1.2 var(--font-ui);
   font-variant-numeric: tabular-nums;
@@ -244,34 +323,150 @@
   white-space: nowrap;
 }
 
-/* Stage: the selected panel's list */
-
-.stage {
-  margin-top: 12px;
+.lobe__more {
+  flex: none;
+  font: 600 0.9375rem/1.2 var(--font-ui);
 }
 
-.stage:not(.is-open) {
-  display: none;
+/* Zoom: a panel opened in place. The name sits in the breadcrumb above it,
+   and the rest of the page stays behind, hidden, until it closes. */
+
+.zoom {
+  width: min(100%, 1080px);
+  margin: 0 auto;
+  padding: clamp(48px, 9vh, 88px) var(--gutter) 0;
 }
 
-.stage__panel {
-  padding: 24px clamp(20px, 3vw, 32px) 26px;
+:root[data-zoomed] {
+  overflow: hidden;
+}
+
+:root[data-zoomed] .page,
+:root[data-zoomed] .colophon {
+  visibility: hidden;
+}
+
+:root[data-zoomed] .theme-switch {
+  position: fixed;
+}
+
+:root[data-zoomed] .zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 0 var(--gutter) clamp(16px, 3vh, 32px);
+}
+
+/* One line: a long page title is cut short rather than wrapping. */
+.crumbs ol {
+  display: flex;
+  align-items: baseline;
+  margin: 0;
+  /* Clear of the theme switch. */
+  padding: 20px 150px 20px 0;
+  list-style: none;
+}
+
+.crumbs li {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.crumbs .crumbs__item {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.crumbs li + li::before {
+  content: "/";
+  margin: 0 12px;
+  color: var(--rule-strong);
+  font: 400 1rem/1 var(--font-ui);
+}
+
+.crumbs__home {
+  color: var(--ink);
+  font: 500 1.375rem/1 var(--font-ui);
+  font-stretch: 118%;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.crumbs__section a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--ink-soft);
+  font: 500 1rem/1.2 var(--font-ui);
+  text-decoration: none;
+}
+
+.crumbs__home:hover,
+.crumbs__section a:hover,
+.crumbs__section a[aria-current] {
+  color: var(--ink);
+}
+
+.crumbs__icon {
+  color: var(--link);
+}
+
+.crumbs__item span {
+  overflow: hidden;
+  min-width: 0;
+  max-width: 48ch;
+  color: var(--ink);
+  font: 500 1rem/1.2 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheet {
+  position: relative;
   border: 1px solid var(--rule);
   border-radius: 6px;
   background: var(--glass-solid);
-  animation: stage-in 200ms ease-out;
 }
 
-.stage__panel:focus {
+.sheet:focus {
   outline: none;
 }
 
-@keyframes stage-in {
-  from { opacity: 0; transform: translateY(6px); }
+:root[data-zoomed] .sheet {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* A page in the sheet scrolls inside its frame. */
+:root[data-zoomed] .sheet:has(> .sheet__frame:not([hidden])) {
+  overflow: hidden;
+}
+
+.sheet__list {
+  padding: clamp(20px, 3vw, 36px) clamp(20px, 4vw, 48px) 40px;
+}
+
+.sheet__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  transition: opacity 160ms ease;
+}
+
+.sheet__frame.is-loading {
+  opacity: 0;
 }
 
 .entries {
-  margin: 0;
+  margin: 0 auto;
+  max-width: 76ch;
   padding: 0;
   list-style: none;
 }
@@ -280,7 +475,7 @@
   display: grid;
   grid-template-columns: 3.25rem minmax(0, 1fr);
   column-gap: 16px;
-  padding: 10px 0;
+  padding: 12px 0;
   border-top: 1px solid var(--rule);
 }
 
@@ -320,42 +515,17 @@
   line-height: 1.5;
 }
 
-.stage__lead {
-  max-width: var(--measure);
-  margin: 0 0 16px;
-}
+/* The bio */
 
-.stage__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-  margin: 0;
-}
-
-.stage__more {
-  display: inline-block;
-  margin-top: 16px;
-  font: 600 0.9375rem/1.3 var(--font-ui);
-}
-
-.stage__actions .stage__more {
-  margin-top: 0;
-}
-
-/* Bio */
-
-.bio {
+.sheet__about {
   display: grid;
   grid-template-columns: 136px minmax(0, var(--measure));
+  justify-content: center;
   gap: 32px;
-  margin-top: clamp(48px, 9vh, 88px);
   padding: clamp(24px, 4vw, 44px);
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  background: var(--glass-solid);
 }
 
-.bio__portrait {
+.sheet__portrait {
   width: 136px;
   height: auto;
   aspect-ratio: 1;
@@ -363,29 +533,63 @@
   object-fit: cover;
 }
 
-.bio__text > :first-child {
+.sheet__about-text > :first-child {
   margin-top: 0;
 }
 
-.bio__text h2 {
+.sheet__about-text h2 {
   margin: 2rem 0 0.5rem;
   font: 600 1.25rem/1.3 var(--font-ui);
 }
 
-.bio__text ul {
+.sheet__about-text ul {
   padding-left: 1.1em;
 }
 
-.bio__text li + li {
+.sheet__about-text li + li {
   margin-top: 0.4em;
 }
 
-.bio__text strong {
+.sheet__about-text strong {
   font-weight: 600;
 }
 
-/* Narrow screens: two columns of compact panels, so a thumb can tap through
-   them quickly; the bio portrait moves above the text. */
+/* Zooming in morphs the name into the breadcrumb and the front panel into
+   the sheet (home.js starts the view transition). The root opts out, so the
+   network keeps running underneath while the rest fades. */
+
+:root {
+  view-transition-name: none;
+}
+
+:root:not([data-zoomed]) .hero__name,
+:root[data-zoomed] .crumbs__home {
+  view-transition-name: site-name;
+}
+
+:root:not([data-zoomed]) .lobe[data-front] .lobe__face--front,
+:root[data-zoomed] .sheet {
+  view-transition-name: panel;
+}
+
+:root:not([data-zoomed]) .hero__tagline { view-transition-name: tagline; }
+:root:not([data-zoomed]) .hero__links { view-transition-name: hero-links; }
+:root:not([data-zoomed]) .lobes { view-transition-name: turntable; }
+:root[data-zoomed] .crumbs__section { view-transition-name: crumb-section; }
+:root[data-zoomed] .crumbs__item { view-transition-name: crumb-item; }
+
+::view-transition-group(*) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* The panel's content does not stretch into the sheet's; it fades out early. */
+::view-transition-old(panel) {
+  animation-duration: 160ms;
+}
+
+/* Narrow screens: two columns of compact cards without JavaScript; the bio
+   portrait moves above the text. */
 
 @media (max-width: 860px) {
   .lobes__grid {
@@ -393,30 +597,32 @@
     gap: 10px;
   }
 
-  .bio {
+  .sheet__about {
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
   }
 
-  .bio__portrait {
+  .sheet__portrait {
     width: 104px;
   }
 }
 
+@media (max-width: 600px) {
+  /* The breadcrumb drops below the theme switch. */
+  .crumbs ol {
+    padding: 64px 0 16px;
+  }
+}
+
 @media (max-width: 520px) {
-  /* One panel per row: two columns are too narrow for the titles. */
+  /* One card per row: two columns are too narrow for the titles. */
   .lobes:not(.is-ring) .lobes__grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .lobes:not(.is-ring) .lobe {
     min-height: 0;
-    padding: 14px 14px 12px;
-  }
-
-  .lobes:not(.is-ring) .lobe__meta {
-    margin-top: 4px;
-    padding-top: 0;
+    padding: 16px 16px 14px;
   }
 
   .lobes.is-ring {
@@ -426,16 +632,32 @@
   }
 
   .is-ring .lobe__face {
-    padding: 18px 20px 16px;
+    padding: 18px 18px 16px;
+  }
+
+  .lobe__head {
+    gap: 12px;
   }
 
   .lobe__icon {
-    margin-bottom: 12px;
-    font-size: 2.25rem;
+    font-size: 1.875rem;
   }
 
   .lobe__title {
-    font-size: 2rem;
+    font-size: 1.875rem;
+  }
+
+  .lobe__example {
+    margin-top: 12px;
+    padding: 8px 12px 9px;
+  }
+
+  .lobe__example-title {
+    font-size: 1rem;
+  }
+
+  .lobe__example-detail {
+    font-size: 0.875rem;
   }
 
   .entry {
@@ -448,9 +670,5 @@
   .lobe__face,
   .lobe__face::after {
     transition: none;
-  }
-
-  .stage__panel {
-    animation: none;
   }
 }

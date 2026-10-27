@@ -20,7 +20,7 @@
         {% include site/icon-links.html class="hero__links" %}
       </header>
 
-      <nav class="lobes" aria-label="Profile sections">
+      <section class="lobes" aria-label="Sections">
         <div class="lobes__controls" hidden>
           <button class="lobes__step" type="button" data-step="-1" aria-label="Previous section">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -33,62 +33,90 @@
         {% for cat in site.data.home %}
           {% if cat.collection %}
             {% assign docs = site[cat.collection] | sort: "date" | reverse %}
+            {% assign zoom = "list" %}
           {% else %}
             {% assign docs = "" | split: "" %}
+            {% if cat.key == "about" %}{% assign zoom = "about" %}{% else %}{% assign zoom = "page" %}{% endif %}
           {% endif %}
-          <a class="lobe" id="tab-{{ cat.key }}" href="{{ cat.url | relative_url }}"
-             data-key="{{ cat.key }}" aria-controls="panel-{{ cat.key }}">
-            <span class="lobe__face lobe__face--front">
-              <i class="lobe__icon fas fa-{{ cat.icon }}" aria-hidden="true"></i>
-              <span class="lobe__title">{{ cat.title }}</span>
-              <span class="lobe__meta">
-                {% if docs.size > 0 %}
-                  {{ docs.size }} {% if docs.size == 1 %}{{ cat.noun }}{% else %}{{ cat.nouns }}{% endif %}{% if cat.dated %}{% assign newest = docs | first %}{% assign oldest = docs | last %}{% assign y0 = oldest.date | date: "%Y" %}{% assign y1 = newest.date | date: "%Y" %}, <span class="lobe__years">{{ y0 }}{% if y1 != y0 %}–{{ y1 }}{% endif %}</span>{% endif %}
-                {% elsif cat.pdf %}
-                  Web and PDF
-                {% endif %}
-              </span>
-            </span>
-            <span class="lobe__face lobe__face--back" aria-hidden="true"><i class="lobe__icon fas fa-{{ cat.icon }}" aria-hidden="true"></i>{{ cat.title }}</span>
-          </a>
-        {% endfor %}
-        </div>
-      </nav>
-
-      <div class="stage">
-        {% for cat in site.data.home %}
-          <section class="stage__panel" id="panel-{{ cat.key }}" aria-labelledby="tab-{{ cat.key }}" hidden>
-            {% if cat.collection %}
-              {% assign docs = site[cat.collection] | sort: "date" | reverse %}
-              {% assign shown = cat.limit | default: docs.size %}
-              <ol class="entries">
-                {% for item in docs limit: shown %}
-                  {% include home/entry.html item=item dated=cat.dated %}
-                {% endfor %}
-              </ol>
-              <a class="stage__more" href="{{ cat.url | relative_url }}">
-                {% if docs.size > shown %}See all {{ docs.size }} {{ cat.nouns }}{% else %}Open the {{ cat.title | downcase }} page{% endif %}
-              </a>
-            {% else %}
-              <p class="stage__lead">The full record of positions, education, publications, talks, teaching, and service.</p>
-              <p class="stage__actions">
-                <a class="stage__more" href="{{ cat.url | relative_url }}">Read the CV</a>
-                <a class="stage__more" href="{{ cat.pdf | relative_url }}">Download the PDF</a>
+          {% if cat.url contains "#" %}{% assign more = cat.url %}{% else %}{% assign more = cat.url | relative_url %}{% endif %}
+          <article class="lobe" id="lobe-{{ cat.key }}" data-key="{{ cat.key }}" data-zoom="{{ zoom }}"
+                   data-title="{{ cat.title }}" data-icon="{{ cat.icon }}" data-url="{{ cat.url | relative_url }}">
+            <div class="lobe__face lobe__face--front">
+              <h2 class="lobe__head">
+                <i class="lobe__icon fas fa-{{ cat.icon }}" aria-hidden="true"></i>
+                <span class="lobe__title">{{ cat.title }}</span>
+              </h2>
+              {% if docs.size > 0 %}
+                {% assign newest = docs | first %}
+                {% capture detail %}{% include home/detail.html item=newest %}{% endcapture %}
+                <a class="lobe__example" href="{{ newest.url | relative_url }}">
+                  <span class="lobe__example-title">{{ newest.title }}</span>
+                  <span class="lobe__example-detail">{{ detail | strip }}</span>
+                </a>
+              {% elsif cat.key == "about" %}
+                <a class="lobe__example lobe__example--about" href="{{ more }}">
+                  <img class="lobe__portrait" src="{{ base_path }}/images/{{ author.avatar }}" width="600" height="600" alt="">
+                  <span class="lobe__example-detail">{{ content | split: "</p>" | first | strip_html | truncatewords: 24 }}</span>
+                </a>
+              {% elsif cat.pdf %}
+                <a class="lobe__example" href="{{ cat.pdf | relative_url }}" target="_blank" rel="noopener">
+                  <span class="lobe__example-title">Download the PDF</span>
+                  <span class="lobe__example-detail">Positions, education, publications, talks, teaching, and service.</span>
+                </a>
+              {% endif %}
+              <p class="lobe__foot">
+                <span class="lobe__meta">
+                  {% if docs.size > 0 %}
+                    {{ docs.size }} {% if docs.size == 1 %}{{ cat.noun }}{% else %}{{ cat.nouns }}{% endif %}{% if cat.dated %}{% assign oldest = docs | last %}{% assign y0 = oldest.date | date: "%Y" %}{% assign y1 = newest.date | date: "%Y" %}, <span class="lobe__years">{{ y0 }}{% if y1 != y0 %}–{{ y1 }}{% endif %}</span>{% endif %}
+                  {% elsif cat.pdf %}
+                    Web and PDF
+                  {% else %}
+                    Bio and contact
+                  {% endif %}
+                </span>
+                <a class="lobe__more" href="{{ more }}">See more</a>
               </p>
-            {% endif %}
-          </section>
+            </div>
+            <span class="lobe__face lobe__face--back" aria-hidden="true"><i class="lobe__icon fas fa-{{ cat.icon }}" aria-hidden="true"></i>{{ cat.title }}</span>
+          </article>
         {% endfor %}
-      </div>
-
-      <section class="bio" aria-labelledby="bio-heading">
-        <h2 id="bio-heading" class="visually-hidden">About</h2>
-        <img class="bio__portrait" src="{{ base_path }}/images/{{ author.avatar }}" width="600" height="600"
-             alt="{{ author.name }} grinning behind a small pumpkin, wearing a patterned bucket hat" loading="lazy">
-        <div class="bio__text">
-          {{ content }}
         </div>
       </section>
     </main>
+
+    {% comment %}The zoomed-in panel. Without JavaScript it is the bio, below the panels;
+    with it, a panel opens into it, under a breadcrumb that the name moves into.{% endcomment %}
+    <div class="zoom">
+      <nav class="crumbs" aria-label="Breadcrumb" hidden>
+        <ol>
+          <li><a class="crumbs__home" href="#">{{ site.name }}</a></li>
+          <li class="crumbs__section"><a href="#"><i class="crumbs__icon fas" aria-hidden="true"></i><span></span></a></li>
+          <li class="crumbs__item" hidden><span aria-current="page"></span></li>
+        </ol>
+      </nav>
+      <div class="sheet" tabindex="-1">
+        <section class="sheet__about" id="bio" aria-labelledby="about-heading">
+          <h2 id="about-heading" class="visually-hidden">About</h2>
+          <img class="sheet__portrait" src="{{ base_path }}/images/{{ author.avatar }}" width="600" height="600"
+               alt="{{ author.name }} grinning behind a small pumpkin, wearing a patterned bucket hat" loading="lazy">
+          <div class="sheet__about-text">
+            {{ content }}
+          </div>
+        </section>
+        {% for cat in site.data.home %}
+          {% if cat.collection %}
+            {% assign docs = site[cat.collection] | sort: "date" | reverse %}
+            <template data-list="{{ cat.key }}">
+              <ol class="entries">
+                {% for item in docs %}
+                  {% include home/entry.html item=item dated=cat.dated %}
+                {% endfor %}
+              </ol>
+            </template>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
 
     {% include site/colophon.html %}
   </body>

@@ -11,6 +11,10 @@
       theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
     document.documentElement.setAttribute("data-theme", theme);
+    /* A page shown inside the home page's zoomed panel drops its own frame. */
+    if (window.self !== window.top && /[?&]embed\b/.test(location.search)) {
+      document.documentElement.setAttribute("data-embed", "");
+    }
   })();
 </script>
 {% include seo.html %}

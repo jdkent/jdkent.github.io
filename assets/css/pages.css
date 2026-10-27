@@ -239,6 +239,27 @@ figure.highlight:before {
   color: var(--link) !important;
 }
 
+/* Inside the home page's zoomed panel (data-embed): the panel is the frame,
+   so the page drops its header, footer, network and sheet. */
+
+:root[data-embed],
+:root[data-embed] body {
+  background: transparent;
+}
+
+:root[data-embed] .site-header,
+:root[data-embed] .colophon,
+:root[data-embed] .field {
+  display: none;
+}
+
+:root[data-embed] #main {
+  padding: clamp(20px, 3vw, 36px) clamp(20px, 4vw, 48px) 48px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
 /* Footer: icon links above the line, since these pages have no bio. */
 
 .colophon {

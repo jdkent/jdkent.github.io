@@ -126,7 +126,7 @@ export function createLazySusan(scene, ring, panels, { onFront, reducedMotion = 
     drag = null;
     animate();
   }
-  // Panels are links; a native link drag would cancel the pointer stream.
+  // Panels hold links; a native link drag would cancel the pointer stream.
   scene.addEventListener("dragstart", (e) => e.preventDefault());
   scene.addEventListener("pointerup", release);
   scene.addEventListener("pointercancel", release);
