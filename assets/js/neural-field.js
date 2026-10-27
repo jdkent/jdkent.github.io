@@ -97,20 +97,26 @@ function traceSoma(ctx, c) {
   }
 }
 
-// Distance along the tree from the soma to each segment's two ends.
-// Segments continue from the end of an earlier one, or start at the soma.
+// Distance along the tree from the soma to each segment's two ends, and
+// exp(d / tail) there. Behind a pulse's front f the pulse is
+// exp(-(f - d) / tail) = exp(-f / tail) * exp(d / tail), so with the second
+// factor stored per end, a tree is lit with one exponential per pulse, not
+// one per piece. Segments continue from the end of an earlier one, or start
+// at the soma.
 function treeDistances(c) {
-  const g = c.segs, ends = new Map(), dist = new Float32Array((g.length / 5) * 2);
+  const g = c.segs, ends = new Map(), n = (g.length / 5) * 2;
+  const dist = new Float64Array(n), grow = new Float64Array(n);
   let reach = 0;
-  for (let i = 0; i < g.length; i += 5) {
+  for (let i = 0, j = 0; i < g.length; i += 5, j += 2) {
     const from = ends.get(`${g[i]},${g[i + 1]}`) ?? Math.hypot(g[i] - c.x, g[i + 1] - c.y);
     const to = from + Math.hypot(g[i + 2] - g[i], g[i + 3] - g[i + 1]);
     ends.set(`${g[i + 2]},${g[i + 3]}`, to);
-    dist[(i / 5) * 2] = from;
-    dist[(i / 5) * 2 + 1] = to;
+    dist[j] = from; dist[j + 1] = to;
+    grow[j] = Math.exp(from / DENDRITE_PULSE.tail); grow[j + 1] = Math.exp(to / DENDRITE_PULSE.tail);
     reach = Math.max(reach, to);
   }
   c.dist = dist;
+  c.grow = grow;
   c.reach = reach;
 }
 
@@ -212,13 +218,16 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
   };
   // How far along its axon (px) a spike's pulse has run; past the end once arrived.
   const headOf = (e) => ((cortex.time - e.from) / cortex.synapses[e.syn].travel) * cortex.synapses[e.syn].len;
+  // Each pulse's head, worked out once a frame.
+  const placePulses = () => { for (const e of pulses) e.head = headOf(e); };
 
   // The tint of a cell's potential building toward threshold, now.
   const tint = (c) => BUILDUP_GLOW * Math.min(1, Math.max(0, c.v - V_REST - BUILDUP_FROM) / BUILDUP_SPAN);
 
   function step(dt) {
     cortex.step(dt * TIME_SCALE, RELEASE.rest + (RELEASE.aroused - RELEASE.rest) * arousalLevel(now()), onSpike);
-    pulses = pulses.filter((e) => headOf(e) - AXON_PULSE.tail * 6 < cortex.synapses[e.syn].len);
+    placePulses();
+    pulses = pulses.filter((e) => e.head - AXON_PULSE.tail * 6 < cortex.synapses[e.syn].len);
     let active = cortex.inFlight.length > 0 || pulses.length > 0;
     const fade = Math.exp(-dt / BUILDUP_FADE);
     for (const c of cortex.cells) {
@@ -240,6 +249,8 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     ctx.globalCompositeOperation = dark ? "lighter" : "multiply";
     ctx.lineCap = "butt";
 
+    const visible = AXON_PULSE.tail * Math.log(AXON_PULSE.peak / faintest) + stride;
+
     // Lit pieces of neurite go into one path per brightness level, axons and
     // dendrites apart since they are drawn at different widths.
     const axons = new Array(LEVELS).fill(null), dendrites = new Array(LEVELS).fill(null);
@@ -255,8 +266,13 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     // Axon pulses, in short pieces whose brightness follows the pulse.
     for (let k = 0; k < pulses.length && k < maxPulses; k++) {
       const e = pulses[k], s = cortex.synapses[e.syn];
-      const head = headOf(e);
-      const from = Math.max(0, head - AXON_PULSE.tail * 6), to = Math.min(s.len, head + AXON_PULSE.lead * 2);
+      const head = e.head ?? headOf(e);
+      // The pulse's pieces lie on a grid starting AXON_PULSE.tail * 6 behind
+      // its head (or at the axon's start); those further back than `visible`
+      // are fainter than `faintest`, so skip whole pieces up to there.
+      const origin = Math.max(0, head - AXON_PULSE.tail * 6);
+      const from = origin + stride * Math.max(0, Math.floor((head - visible - origin) / stride));
+      const to = Math.min(s.len, head + AXON_PULSE.lead * 2);
       if (from >= to) continue;
       let [px, py] = quadPoint(s, from / s.len);
       for (let a = from; a < to;) {
@@ -280,26 +296,42 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
         (bodies[l] || (bodies[l] = new Path2D())).addPath(c.body);
         continue;
       }
-      const fronts = c.waves.map((t) => AXON_SPEED * (cortex.time - t));
-      const wave = (d) => {
+      // Per pulse: its front, its strength there, and the strength times
+      // exp(-front / tail), which the stored exp(d / tail) turns into the
+      // brightness behind the front.
+      const nf = c.waves.length, front = [], amp = [], behind = [];
+      for (const t of c.waves) {
+        const f = AXON_SPEED * (cortex.time - t), a = Math.exp(-f / DENDRITE_REACH);
+        front.push(f); amp.push(a); behind.push(a * Math.exp(-f / DENDRITE_PULSE.tail));
+      }
+      // The pulses' sum at distance d, with g = exp(d / tail) when known, and
+      // the dendrite's brightness there.
+      const sum = (d, g = Math.exp(d / DENDRITE_PULSE.tail)) => {
         let b = 0;
-        for (const f of fronts) b += Math.exp(-f / DENDRITE_REACH) * pulse(f - d, DENDRITE_PULSE);
+        for (let w = 0; w < nf; w++) {
+          const ahead = (d - front[w]) / DENDRITE_PULSE.lead;
+          // The leading edge is under 1e-6 past 3.7 widths: far below a brightness step.
+          if (ahead <= 0) b += behind[w] * g;
+          else if (ahead < 3.7) b += amp[w] * Math.exp(-ahead * ahead);
+        }
         return b;
       };
-      const g = c.segs, dist = c.dist;
+      const wave = (d, g) => base + DENDRITE_PULSE.peak * sum(d, g);
+      const g = c.segs, dist = c.dist, grow = c.grow;
       for (let i = 0, j = 0; i < g.length; i += 5, j += 2) {
         const d0 = dist[j], d1 = dist[j + 1];
-        if (base + DENDRITE_PULSE.peak * Math.max(wave(d0), wave(d1), wave((d0 + d1) / 2)) < faintest) continue;
+        const b0 = wave(d0, grow[j]), b1 = wave(d1, grow[j + 1]), bm = wave((d0 + d1) / 2, Math.sqrt(grow[j] * grow[j + 1]));
+        if (Math.max(b0, b1, bm) < faintest) continue;
         const n = Math.max(1, Math.ceil((d1 - d0) / stride));
         for (let k = 0; k < n; k++) {
           const t0 = k / n, t1 = (k + 1) / n;
           piece(dendrites,
             g[i] + (g[i + 2] - g[i]) * t0, g[i + 1] + (g[i + 3] - g[i + 1]) * t0,
             g[i] + (g[i + 2] - g[i]) * t1, g[i + 1] + (g[i + 3] - g[i + 1]) * t1,
-            base + DENDRITE_PULSE.peak * wave(d0 + (d1 - d0) * (t0 + t1) / 2));
+            wave(d0 + (d1 - d0) * (t0 + t1) / 2));
         }
       }
-      const b = base + wave(0);
+      const b = base + sum(0, 1);
       if (b >= faintest) {
         const l = level(Math.min(1, b));
         (bodies[l] || (bodies[l] = new Path2D())).addPath(c.body);
