@@ -155,47 +155,6 @@ h1, h2, h3, h4, h5, h6 {
   overflow-x: auto;
 }
 
-/* Talk map. The height must hold before Leaflet runs, since talkmap.js reads
-   it; 512px is the world's height at zoom 1, low enough to show every talk.
-   leaflet.css loads after this file, so overrides of its rules need the
-   extra .talkmap to win. */
-.talkmap {
-  height: min(70vh, 512px);
-}
-
-.talkmap.leaflet-container {
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  background: var(--ground);
-  font-family: var(--font-ui);
-}
-
-.talkmap .talkmap__cluster {
-  display: grid;
-  place-items: center;
-  border: 2px solid var(--ground);
-  border-radius: 50%;
-  background: var(--link);
-  color: var(--ground);
-  font: 600 0.8125rem/1 var(--font-ui);
-}
-
-.talkmap .leaflet-bar a,
-.talkmap .leaflet-popup-content-wrapper,
-.talkmap .leaflet-popup-tip {
-  background: var(--glass-solid);
-  color: var(--ink);
-}
-
-.talkmap .leaflet-bar a.leaflet-disabled {
-  background: var(--glass-solid);
-  color: var(--ink-soft);
-}
-
-.talkmap .leaflet-popup-content {
-  font: 0.875rem/1.4 var(--font-ui);
-}
-
 /* List titles read as text, with the accent on hover, as on home. */
 .archive__item-title a {
   color: var(--ink);
