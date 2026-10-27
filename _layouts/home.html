@@ -55,7 +55,7 @@
                 </a>
               {% elsif cat.key == "about" %}
                 <a class="lobe__example lobe__example--about" href="{{ more }}">
-                  <img class="lobe__portrait" src="{{ base_path }}/images/{{ author.avatar }}" width="600" height="600" alt="">
+                  <img class="lobe__portrait" src="{{ base_path }}/images/profile-face.jpg" width="176" height="176" alt="">
                   <span class="lobe__example-detail">{{ content | split: "</p>" | first | strip_html | truncatewords: 24 }}</span>
                 </a>
               {% elsif cat.pdf %}
@@ -97,8 +97,8 @@
       <div class="sheet" tabindex="-1">
         <section class="sheet__about" id="bio" aria-labelledby="about-heading">
           <h2 id="about-heading" class="visually-hidden">About</h2>
-          <img class="sheet__portrait" src="{{ base_path }}/images/{{ author.avatar }}" width="600" height="600"
-               alt="{{ author.name }} grinning behind a small pumpkin, wearing a patterned bucket hat" loading="lazy">
+          <img class="sheet__portrait" src="{{ base_path }}/images/{{ author.avatar }}" width="720" height="720"
+               alt="Black-and-white photo of {{ author.name }} reaching up to touch one of a string of hanging light bulbs" loading="lazy">
           <div class="sheet__about-text">
             {{ content }}
           </div>

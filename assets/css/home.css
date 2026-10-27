@@ -519,14 +519,14 @@
 
 .sheet__about {
   display: grid;
-  grid-template-columns: 136px minmax(0, var(--measure));
+  grid-template-columns: 200px minmax(0, var(--measure));
   justify-content: center;
   gap: 32px;
   padding: clamp(24px, 4vw, 44px);
 }
 
 .sheet__portrait {
-  width: 136px;
+  width: 200px;
   height: auto;
   aspect-ratio: 1;
   border-radius: 4px;
@@ -603,7 +603,7 @@
   }
 
   .sheet__portrait {
-    width: 104px;
+    width: 160px;
   }
 }
 
