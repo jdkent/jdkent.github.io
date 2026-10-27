@@ -207,8 +207,15 @@ function apply(state) {
   // Keep focus in the sheet when the link that had it goes (a list giving
   // way to a page), and return it to the panel on zooming out.
   const active = document.activeElement;
-  if (zoomed && (!zoom.contains(active) || active.closest("[hidden]"))) sheet.focus({ preventScroll: true });
+  if (zoomed && (!zoom.contains(active) || active.closest("[hidden]"))) focusSheet();
   if (!zoomed && wasZoomed) lobe.querySelector(".lobe__more").focus({ preventScroll: true });
+}
+
+// Focus what scrolls, so the arrow and page keys scroll the panel: the page
+// in the frame once it has loaded, otherwise the sheet itself.
+function focusSheet() {
+  if (!frame.hidden && frame.isConnected && !frame.classList.contains("is-loading")) frame.contentWindow.focus();
+  else sheet.focus({ preventScroll: true });
 }
 
 // Zooming in or out morphs the name into the breadcrumb and the front panel
@@ -277,6 +284,8 @@ window.addEventListener("message", (event) => {
 
 frame.addEventListener("load", () => {
   frame.classList.remove("is-loading");
+  // Hand focus to the page that just loaded, unless it is on the breadcrumb.
+  if (current.path !== null && !crumbs.contains(document.activeElement)) frame.contentWindow.focus();
   const doc = frame.contentDocument;
   doc.documentElement.setAttribute("data-theme", root.getAttribute("data-theme"));
   const title = doc.querySelector(".page__title")?.textContent.trim() || doc.title;
