@@ -308,7 +308,7 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     if (arouse) { drive += 1; arousal = drive; arousalAt = t; }
     // 0 for an isolated click, approaching 1 as clicks come faster.
     const a = 1 - Math.exp(-Math.max(0, drive - 1) / 1.8);
-    const wave = { x, y, gain: 0.64 + 0.33 * a, speed: 150 + 250 * a, fired: new Set() };
+    const wave = { x, y, gain: 0.64 + 0.33 * a, speed: 75 + 125 * a, fired: new Set() };
     const energy = arouse ? 0.55 + 0.45 * a : 0.4;
     const nearest = nodes
       .map((n) => [Math.hypot(n.x - x, n.y - y), n])
