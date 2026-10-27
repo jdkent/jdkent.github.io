@@ -1,31 +1,67 @@
-// A network of neurons drawn behind the page. Each stimulus fires the nearest
-// neurons; spikes travel outward along axons and fire the neurons they reach.
-// Stimuli that arrive in quick succession raise arousal, which lets each hop
-// keep more of its energy, so rapid clicking carries waves off the page edges.
-// Neurons also fire on their own now and then.
+// The insular cortex from cortex.js, drawn behind the page. The cells'
+// morphologies are painted once, faintly, like a Golgi stain, and activity
+// is drawn only within the neurites, never as glows around them: a press
+// injects current into the cells under it, and a cell's potential building
+// toward threshold tints it faintly. When a cell fires, a pulse spreads out
+// from its body through the dendritic tree, fading with distance (as a
+// back-propagating action potential does), and each spike runs along its
+// axon as a soft-edged pulse to the dendrite it reaches. The model runs in
+// slow motion so the spread can be watched.
+//
+// Presses in quick succession raise arousal, which raises the release
+// probability at every synapse and widens the area a press drives, so rapid
+// pressing carries activity further (not faster: conduction sets the speed).
+// Now and then a cell somewhere on screen is driven by itself.
 
-const LEVELS = 24;
+import { createCortex, V_REST, AXON_SPEED } from "./cortex.js";
 
-const CUTOFF = 0.05;       // energy below which a spike is not propagated
-const AROUSAL_TAU = 1.6;   // s for arousal to decay by 1/e
-// Glow swells in over NODE_RISE and fades over the decays, so firing blooms
-// rather than flashes.
-const NODE_RISE = 0.25;    // s glow time constants
-const NODE_DECAY = 1.0;
-const EDGE_DECAY = 1.6;
-const CLICK_ENERGY = 0.55;  // an isolated click's stimulus
-const WAVE_SPEED = 75;     // px/s along an axon, however fast the clicks come
-// Spontaneous firing: a random neuron on screen, at random intervals, four
-// times as strong as a click, so it blooms out across much of the screen.
+const LEVELS = 48;
+
+const TIME_SCALE = 10 / 3; // model ms per real second
+const RELEASE = { rest: 0.5, aroused: 0.8 };
+// Arousal outlasts the slow-motion spread, so quick presses still carry it
+// far: 12 s real is 40 ms of model time.
+const AROUSAL_TAU = 12;    // s for arousal to decay by 1/e
+const AROUSAL_AREA = 3;    // full arousal drives this much more area
+// A press: current into the cells under it, in µA/cm² for model ms.
+const PRESS = { amplitude: 14, ms: 6 };
+// A pulse's shape along a neurite, in px: a soft leading edge and a longer
+// fading tail. Dendritic pulses travel at the conduction speed and weaken
+// over DENDRITE_REACH px of tree. Pulses in transit are dimmer and thinner
+// than a firing cell's body, so the cells carry the picture.
+const AXON_PULSE = { lead: 6, tail: 36, peak: 0.35, width: 0.9 };
+const DENDRITE_PULSE = { lead: 10, tail: 70, peak: 0.5, width: 1.2 };
+const DENDRITE_REACH = 260;
+const WAVES_KEPT = 2;      // pulses drawn per tree; older ones are mostly faded tails
+// Lit neurites are drawn in pieces this long (px), meeting end to end with
+// square ends so no two overlap, which would show as beads along them.
+const STRIDE = 3;
+// Potentials within BUILDUP_FROM mV of rest are not drawn; above that the
+// tint grows to BUILDUP_GLOW at BUILDUP_SPAN mV more. The tint follows a
+// rising potential at once but fades over BUILDUP_FADE (real seconds), so a
+// cell dims gradually after firing rather than going dark as it repolarizes.
+const BUILDUP_FROM = 1.5, BUILDUP_SPAN = 12, BUILDUP_GLOW = 0.35, BUILDUP_FADE = 1.5;
+// Spontaneous firing: a random cell on screen, at random intervals, four
+// times as strong as a press.
 const SPONTANEOUS_MEAN = 20; // s between firings, on average
 const SPONTANEOUS_MIN = 5;   // s, at least
-const SPONTANEOUS_ENERGY = 4 * CLICK_ENERGY;
-const MAX_SPIKES = 1500;
+const SPONTANEOUS_STRENGTH = 4;
+const MAX_PULSES = 1500;   // axon pulses drawn at once
+const FAINTEST = 0.02;     // brightness below which a stretch is not drawn
 // Low-power mode: when frames keep arriving slower than SLOW_FRAME (as on
-// software rendering), draw activity at half resolution with fewer spikes.
+// software rendering), draw activity at half resolution, with fewer and
+// coarser axon pulses and only the brighter part of each pulse.
 const SLOW_FRAME = 0.034;  // s, slower than ~30 fps
 const SLOW_STREAK = 20;    // net slow frames before switching
-const LOW_POWER = { scale: 0.5, maxSpikes: 600 };
+const LOW_POWER = { scale: 0.5, maxPulses: 300, stride: 12, faintest: 0.15 };
+
+// Brightness at `x` px behind a pulse's front (negative: ahead of it).
+const pulse = (x, { lead, tail }) => (x < 0 ? Math.exp(-((x / lead) ** 2)) : Math.exp(-x / tail));
+
+function quadPoint(s, t) {
+  const u = 1 - t;
+  return [u * u * s.ax + 2 * u * t * s.cx + t * t * s.bx, u * u * s.ay + 2 * u * t * s.cy + t * t * s.by];
+}
 
 function sample(stops, t) {
   for (let i = 1; i < stops.length; i++) {
@@ -40,7 +76,7 @@ function sample(stops, t) {
 }
 
 // The colormap is five evenly spaced stops, --cmap-0 to --cmap-4, set per
-// theme in home.css so the canvas and the colorbar share one definition.
+// theme in base.css so the canvas and the colorbar share one definition.
 function readColormap() {
   const css = getComputedStyle(document.documentElement);
   return [0, 1, 2, 3, 4].map((i) => {
@@ -49,41 +85,59 @@ function readColormap() {
   });
 }
 
-function mulberry32(seed) {
-  return function () {
-    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+function traceSoma(ctx, c) {
+  if (c.soma === "triangle") {
+    ctx.moveTo(c.x, c.y - c.sh * 0.55);
+    ctx.lineTo(c.x - c.sw / 2, c.y + c.sh * 0.45);
+    ctx.lineTo(c.x + c.sw / 2, c.y + c.sh * 0.45);
+    ctx.closePath();
+  } else {
+    ctx.moveTo(c.x + c.sw / 2, c.y);
+    ctx.ellipse(c.x, c.y, c.sw / 2, c.sh / 2, 0, 0, Math.PI * 2);
+  }
 }
 
-function quadPoint(a, e, b, t) {
-  const u = 1 - t;
-  return [u * u * a.x + 2 * u * t * e.cx + t * t * b.x, u * u * a.y + 2 * u * t * e.cy + t * t * b.y];
+// Distance along the tree from the soma to each segment's two ends.
+// Segments continue from the end of an earlier one, or start at the soma.
+function treeDistances(c) {
+  const g = c.segs, ends = new Map(), dist = new Float32Array((g.length / 5) * 2);
+  let reach = 0;
+  for (let i = 0; i < g.length; i += 5) {
+    const from = ends.get(`${g[i]},${g[i + 1]}`) ?? Math.hypot(g[i] - c.x, g[i + 1] - c.y);
+    const to = from + Math.hypot(g[i + 2] - g[i], g[i + 3] - g[i + 1]);
+    ends.set(`${g[i + 2]},${g[i + 3]}`, to);
+    dist[(i / 5) * 2] = from;
+    dist[(i / 5) * 2 + 1] = to;
+    reach = Math.max(reach, to);
+  }
+  c.dist = dist;
+  c.reach = reach;
 }
 
 export function createNeuralField(canvas, { reducedMotion = false, onSlow = () => {} } = {}) {
-  // The resting network is painted once onto `canvas`. Activity is redrawn
+  // The resting cortex is painted once onto `canvas`. Activity is redrawn
   // every frame onto a second canvas stacked above it at CSS-pixel
-  // resolution: soft glows gain nothing from device pixels, and a full
+  // resolution: soft gradients gain nothing from device pixels, and a full
   // device-pixel redraw per frame is what made rapid clicking stall.
   const live = canvas.cloneNode();
   canvas.after(live);
   const rest = canvas.getContext("2d");
   const ctx = live.getContext("2d");
-  let width = 0, height = 0, dpr = 1, spacing = 0;
-  let nodes = [], edges = [], spikes = [];
-  let palette = [], sprites = [], dark = false;
+  let width = 0, height = 0, dpr = 1;
+  let cortex = null;
+  let palette = [], dark = false;
   let arousal = 0, arousalAt = 0;
   let frame = 0, lastTick = 0;
-  let scale = 1, maxSpikes = MAX_SPIKES, slow = 0;
+  let scale = 1, maxPulses = MAX_PULSES, stride = STRIDE, faintest = FAINTEST, slow = 0;
+  // Axon spikes being drawn: kept past their arrival until the pulse's tail
+  // has drained into the dendrite it reached.
+  let pulses = [];
 
   const now = () => performance.now() / 1000;
   const level = (e) => Math.min(LEVELS - 1, Math.max(0, Math.round(e * (LEVELS - 1))));
+  // 0 when calm, approaching 1 as presses come faster.
+  const arousalLevel = (t) => 1 - Math.exp(-Math.max(0, arousal * Math.exp(-(t - arousalAt) / AROUSAL_TAU) - 1) / 1.8);
 
-  // Jittered grid with one ring of neurons just outside the viewport, so
-  // waves visibly leave through the edges instead of stopping short of them.
   function build() {
     width = canvas.clientWidth;
     height = canvas.clientHeight;
@@ -92,60 +146,23 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     canvas.height = Math.round(height * dpr);
     live.width = Math.round(width * scale);
     live.height = Math.round(height * scale);
-    spacing = Math.min(96, Math.max(56, Math.sqrt((width * height) / 170)));
-
-    const rand = mulberry32(7);
-    const cols = Math.ceil(width / spacing) + 2;
-    const rows = Math.ceil(height / spacing) + 2;
-    nodes = [];
-    for (let j = 0; j < rows; j++) {
-      for (let i = 0; i < cols; i++) {
-        nodes.push({
-          id: nodes.length,
-          x: (i - 0.5) * spacing + (rand() - 0.5) * spacing * 0.85,
-          y: (j - 0.5) * spacing + (rand() - 0.5) * spacing * 0.85,
-          r: 1 + rand() * 1.4,
-          heat: 0,
-          charge: 0,
-          edges: [],
-        });
+    cortex = createCortex(width, height);
+    pulses = [];
+    for (const c of cortex.cells) {
+      c.waves = [];   // model times of recent spikes, whose pulses are still in the tree
+      c.shade = 0;    // the build-up tint as drawn
+      c.body = new Path2D();
+      traceSoma(c.body, c);
+      // The whole tree as one path, for drawing it evenly tinted: segments
+      // that continue one another join into one line, with no ends to overlap.
+      c.tree = new Path2D();
+      const g = c.segs;
+      for (let i = 0; i < g.length; i += 5) {
+        if (i === 0 || g[i] !== g[i - 3] || g[i + 1] !== g[i - 2]) c.tree.moveTo(g[i], g[i + 1]);
+        c.tree.lineTo(g[i + 2], g[i + 3]);
       }
+      treeDistances(c);
     }
-
-    edges = [];
-    const seen = new Set();
-    for (let j = 0; j < rows; j++) {
-      for (let i = 0; i < cols; i++) {
-        const a = nodes[j * cols + i];
-        const near = [];
-        for (let dj = -2; dj <= 2; dj++) {
-          for (let di = -2; di <= 2; di++) {
-            const ii = i + di, jj = j + dj;
-            if ((di || dj) && ii >= 0 && jj >= 0 && ii < cols && jj < rows) {
-              const b = nodes[jj * cols + ii];
-              near.push([Math.hypot(b.x - a.x, b.y - a.y), b]);
-            }
-          }
-        }
-        near.sort((p, q) => p[0] - q[0]);
-        const degree = 2 + (rand() < 0.5) + (rand() < 0.2);
-        for (const [len, b] of near.slice(0, degree)) {
-          const key = Math.min(a.id, b.id) * nodes.length + Math.max(a.id, b.id);
-          if (len > spacing * 2.2 || seen.has(key)) continue;
-          seen.add(key);
-          const bend = (rand() - 0.5) * 0.35 * len;
-          const e = {
-            a: a.id, b: b.id, len, heat: 0,
-            cx: (a.x + b.x) / 2 - ((b.y - a.y) / len) * bend,
-            cy: (a.y + b.y) / 2 + ((b.x - a.x) / len) * bend,
-          };
-          a.edges.push(edges.length);
-          b.edges.push(edges.length);
-          edges.push(e);
-        }
-      }
-    }
-    spikes = [];
     paintRest();
     draw();
   }
@@ -156,130 +173,149 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     r.setTransform(dpr, 0, 0, dpr, 0, 0);
     r.clearRect(0, 0, width, height);
     r.strokeStyle = css.getPropertyValue("--net-axon").trim();
-    r.lineWidth = 1;
-    r.beginPath();
-    for (const e of edges) {
-      const a = nodes[e.a], b = nodes[e.b];
-      r.moveTo(a.x, a.y);
-      r.quadraticCurveTo(e.cx, e.cy, b.x, b.y);
+    r.lineCap = "butt";
+    // Dendrites, batched by width.
+    const byWidth = new Map();
+    for (const c of cortex.cells) {
+      for (let i = 0; i < c.segs.length; i += 5) {
+        const w = Math.round(c.segs[i + 4] * 4) / 4;
+        if (!byWidth.has(w)) byWidth.set(w, []);
+        byWidth.get(w).push(c.segs, i);
+      }
     }
-    r.stroke();
-    r.fillStyle = css.getPropertyValue("--net-soma").trim();
-    for (const n of nodes) {
+    for (const [w, list] of byWidth) {
+      r.lineWidth = w;
       r.beginPath();
-      r.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-      r.fill();
+      for (let k = 0; k < list.length; k += 2) {
+        const s = list[k], i = list[k + 1];
+        r.moveTo(s[i], s[i + 1]);
+        r.lineTo(s[i + 2], s[i + 3]);
+      }
+      r.stroke();
     }
+    r.fillStyle = css.getPropertyValue("--net-soma").trim();
+    r.beginPath();
+    for (const c of cortex.cells) traceSoma(r, c);
+    r.fill();
   }
 
-  // Pre-rendered radial glows, one per colormap level; far cheaper than shadowBlur.
-  function paintSprites() {
+  // The colormap sampled at each brightness level.
+  function paintPalette() {
     const stops = readColormap();
-    palette = [];
-    sprites = [];
-    for (let i = 0; i < LEVELS; i++) {
-      const [r, g, b] = sample(stops, i / (LEVELS - 1));
-      palette.push(`${r},${g},${b}`);
-      const s = document.createElement("canvas");
-      s.width = s.height = 64;
-      const c = s.getContext("2d");
-      const grad = c.createRadialGradient(32, 32, 0, 32, 32, 32);
-      grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
-      grad.addColorStop(0.25, `rgba(${r},${g},${b},0.45)`);
-      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
-      c.fillStyle = grad;
-      c.fillRect(0, 0, 64, 64);
-      sprites.push(s);
-    }
+    palette = Array.from({ length: LEVELS }, (_, i) => sample(stops, i / (LEVELS - 1)).join(","));
   }
 
-  // Each wave fires a neuron at most once, but separate waves pass through
-  // each other, and their heat adds up, so rapid clicks run hotter.
-  function fire(node, energy, wave) {
-    if (wave.fired.has(node.id)) return;
-    wave.fired.add(node.id);
-    node.charge += energy;
-    const next = energy * wave.gain;
-    if (next < CUTOFF) return;
-    // Only propagate away from the stimulus, so the wave expands instead of echoing.
-    const d0 = Math.hypot(node.x - wave.x, node.y - wave.y) - spacing * 0.1;
-    for (const ei of node.edges) {
-      if (spikes.length >= maxSpikes) return;
-      const e = edges[ei];
-      const to = e.a === node.id ? e.b : e.a;
-      const o = nodes[to];
-      if (Math.hypot(o.x - wave.x, o.y - wave.y) <= d0) continue;
-      spikes.push({ edge: ei, from: node.id, to, t: 0, energy: next, wave });
-    }
-  }
+  const onSpike = (c, sent) => {
+    c.waves.push(cortex.time);
+    if (c.waves.length > WAVES_KEPT) c.waves.shift();
+    pulses.push(...sent);
+  };
+  // How far along its axon (px) a spike's pulse has run; past the end once arrived.
+  const headOf = (e) => ((cortex.time - e.from) / cortex.synapses[e.syn].travel) * cortex.synapses[e.syn].len;
+
+  // The tint of a cell's potential building toward threshold, now.
+  const tint = (c) => BUILDUP_GLOW * Math.min(1, Math.max(0, c.v - V_REST - BUILDUP_FROM) / BUILDUP_SPAN);
 
   function step(dt) {
-    const current = spikes;
-    const count = current.length;
-    const alive = [];
-    for (let i = 0; i < count; i++) {
-      const s = current[i];
-      const e = edges[s.edge];
-      s.t += (WAVE_SPEED * dt) / e.len;
-      e.heat = Math.max(e.heat, Math.min(1, s.energy) * Math.min(1, s.t * 1.5));
-      if (s.t >= 1) fire(nodes[s.to], s.energy, s.wave);
-      else alive.push(s);
+    cortex.step(dt * TIME_SCALE, RELEASE.rest + (RELEASE.aroused - RELEASE.rest) * arousalLevel(now()), onSpike);
+    pulses = pulses.filter((e) => headOf(e) - AXON_PULSE.tail * 6 < cortex.synapses[e.syn].len);
+    let active = cortex.inFlight.length > 0 || pulses.length > 0;
+    const fade = Math.exp(-dt / BUILDUP_FADE);
+    for (const c of cortex.cells) {
+      c.shade = Math.max(tint(c), c.shade * fade);
+      // A pulse is done once its tail has passed the tips of the tree.
+      while (c.waves.length && AXON_SPEED * (cortex.time - c.waves[0]) > c.reach + DENDRITE_PULSE.tail * 4) c.waves.shift();
+      if (c.waves.length || c.shade > 0.01 || cortex.time < c.extUntil) active = true;
     }
-    // fire() appends newly spawned spikes past `count`; they start moving next frame.
-    spikes = alive.concat(current.slice(count));
-    const kn = Math.exp(-dt / NODE_DECAY), ke = Math.exp(-dt / EDGE_DECAY);
-    const rise = 1 - Math.exp(-dt / NODE_RISE);
-    let active = spikes.length > 0;
-    for (const n of nodes) {
-      const take = n.charge * rise;
-      n.charge -= take;
-      n.heat = Math.min(1, n.heat * kn + take);
-      if (n.heat > 0.01 || n.charge > 0.01) active = true;
-    }
-    for (const e of edges) { e.heat *= ke; if (e.heat > 0.01) active = true; }
     return active;
   }
 
   function draw() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalCompositeOperation = "source-over";
-    ctx.globalAlpha = 1;
     ctx.clearRect(0, 0, live.width, live.height);
+    if (!cortex) return;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    // Glows add light on black and deepen like ink on white.
+    // Light adds on black and deepens like ink on white.
     ctx.globalCompositeOperation = dark ? "lighter" : "multiply";
-    ctx.lineCap = "round";
+    ctx.lineCap = "butt";
 
-    for (const e of edges) {
-      if (e.heat < 0.015) continue;
-      const a = nodes[e.a], b = nodes[e.b];
-      ctx.strokeStyle = `rgba(${palette[level(e.heat)]},${Math.min(1, e.heat * 1.6)})`;
-      ctx.lineWidth = 1 + 2.2 * e.heat;
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.quadraticCurveTo(e.cx, e.cy, b.x, b.y);
-      ctx.stroke();
+    // Lit pieces of neurite go into one path per brightness level, axons and
+    // dendrites apart since they are drawn at different widths.
+    const axons = new Array(LEVELS).fill(null), dendrites = new Array(LEVELS).fill(null);
+    const bodies = new Array(LEVELS).fill(null);
+    const piece = (paths, x0, y0, x1, y1, b) => {
+      if (b < faintest) return;
+      const l = level(Math.min(1, b));
+      const p = paths[l] || (paths[l] = new Path2D());
+      p.moveTo(x0, y0);
+      p.lineTo(x1, y1);
+    };
+
+    // Axon pulses, in short pieces whose brightness follows the pulse.
+    for (let k = 0; k < pulses.length && k < maxPulses; k++) {
+      const e = pulses[k], s = cortex.synapses[e.syn];
+      const head = headOf(e);
+      const from = Math.max(0, head - AXON_PULSE.tail * 6), to = Math.min(s.len, head + AXON_PULSE.lead * 2);
+      if (from >= to) continue;
+      let [px, py] = quadPoint(s, from / s.len);
+      for (let a = from; a < to;) {
+        const b = Math.min(to, a + stride);
+        const [qx, qy] = quadPoint(s, b / s.len);
+        piece(axons, px, py, qx, qy, AXON_PULSE.peak * pulse(head - (a + b) / 2, AXON_PULSE));
+        px = qx; py = qy; a = b;
+      }
     }
-    for (const s of spikes) {
-      const e = edges[s.edge];
-      const [x, y] = quadPoint(nodes[s.from], e, nodes[s.to], s.t);
-      // Energy above 1 (a spontaneous firing's first hops) carries further, not brighter.
-      const e1 = Math.min(1, s.energy);
-      const size = 10 + 18 * e1;
-      ctx.globalAlpha = Math.min(1, 0.4 + e1);
-      ctx.drawImage(sprites[level(e1)], x - size / 2, y - size / 2, size, size);
+
+    // Cells: the build-up tint, and the pulses spreading through their
+    // trees. A tree with no pulse in it is tinted evenly, in one piece; in a
+    // tree with a pulse, each lit segment is cut into pieces so its
+    // brightness changes smoothly from end to end.
+    for (const c of cortex.cells) {
+      const base = c.shade;
+      if (!c.waves.length) {
+        if (base < faintest) continue;
+        const l = level(base);
+        (dendrites[l] || (dendrites[l] = new Path2D())).addPath(c.tree);
+        (bodies[l] || (bodies[l] = new Path2D())).addPath(c.body);
+        continue;
+      }
+      const fronts = c.waves.map((t) => AXON_SPEED * (cortex.time - t));
+      const wave = (d) => {
+        let b = 0;
+        for (const f of fronts) b += Math.exp(-f / DENDRITE_REACH) * pulse(f - d, DENDRITE_PULSE);
+        return b;
+      };
+      const g = c.segs, dist = c.dist;
+      for (let i = 0, j = 0; i < g.length; i += 5, j += 2) {
+        const d0 = dist[j], d1 = dist[j + 1];
+        if (base + DENDRITE_PULSE.peak * Math.max(wave(d0), wave(d1), wave((d0 + d1) / 2)) < faintest) continue;
+        const n = Math.max(1, Math.ceil((d1 - d0) / stride));
+        for (let k = 0; k < n; k++) {
+          const t0 = k / n, t1 = (k + 1) / n;
+          piece(dendrites,
+            g[i] + (g[i + 2] - g[i]) * t0, g[i + 1] + (g[i + 3] - g[i + 1]) * t0,
+            g[i] + (g[i + 2] - g[i]) * t1, g[i + 1] + (g[i + 3] - g[i + 1]) * t1,
+            base + DENDRITE_PULSE.peak * wave(d0 + (d1 - d0) * (t0 + t1) / 2));
+        }
+      }
+      const b = base + wave(0);
+      if (b >= faintest) {
+        const l = level(Math.min(1, b));
+        (bodies[l] || (bodies[l] = new Path2D())).addPath(c.body);
+      }
     }
-    for (const n of nodes) {
-      if (n.heat < 0.015) continue;
-      const size = 10 + 40 * n.heat;
-      ctx.globalAlpha = Math.min(1, n.heat * 1.5);
-      ctx.drawImage(sprites[level(n.heat)], n.x - size / 2, n.y - size / 2, size, size);
+
+    for (let l = 0; l < LEVELS; l++) {
+      const color = `rgba(${palette[l]},${Math.min(1, (l / (LEVELS - 1)) * 1.3)})`;
+      if (axons[l]) { ctx.strokeStyle = color; ctx.lineWidth = AXON_PULSE.width; ctx.stroke(axons[l]); }
+      if (dendrites[l]) { ctx.strokeStyle = color; ctx.lineWidth = DENDRITE_PULSE.width; ctx.stroke(dendrites[l]); }
+      if (bodies[l]) { ctx.fillStyle = color; ctx.fill(bodies[l]); }
     }
   }
 
   function lowerPower() {
-    scale = LOW_POWER.scale;
-    maxSpikes = LOW_POWER.maxSpikes;
+    ({ scale, maxPulses, stride, faintest } = LOW_POWER);
     live.width = Math.round(width * scale);
     live.height = Math.round(height * scale);
     onSlow();
@@ -305,34 +341,28 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     frame = requestAnimationFrame(tick);
   }
 
-  // Fire the neurons nearest (x, y), in viewport pixels. With `arouse`, the
-  // stimulus also counts toward the click rate that sets how far waves travel;
-  // `energy` overrides the stimulus's own strength.
-  function stimulate(x, y, { arouse = true, energy: given } = {}) {
-    if (reducedMotion || !nodes.length) return;
+  // Drive the cells near (x, y), in viewport pixels. With `arouse`, the
+  // press also counts toward the press rate that sets arousal; `strength`
+  // scales the area driven.
+  function stimulate(x, y, { arouse = true, strength = 1 } = {}) {
+    if (reducedMotion || !cortex) return;
     const t = now();
-    let drive = arousal * Math.exp(-(t - arousalAt) / AROUSAL_TAU);
-    if (arouse) { drive += 1; arousal = drive; arousalAt = t; }
-    // 0 for an isolated click, approaching 1 as clicks come faster.
-    const a = 1 - Math.exp(-Math.max(0, drive - 1) / 1.8);
-    const wave = { x, y, gain: 0.64 + 0.33 * a, fired: new Set() };
-    const energy = given ?? (arouse ? CLICK_ENERGY + 0.45 * a : 0.4);
-    const nearest = nodes
-      .map((n) => [Math.hypot(n.x - x, n.y - y), n])
-      .sort((p, q) => p[0] - q[0])
-      .slice(0, 3);
-    nearest.forEach(([, n], k) => fire(n, energy * (1 - k * 0.1), wave));
+    if (arouse) {
+      arousal = arousal * Math.exp(-(t - arousalAt) / AROUSAL_TAU) + 1;
+      arousalAt = t;
+    }
+    cortex.inject(x, y, { ...PRESS, area: strength * (1 + AROUSAL_AREA * arousalLevel(t)) });
     start();
   }
 
-  // A neuron somewhere on screen fires by itself. Skipped while the tab is hidden.
+  // A cell somewhere on screen is driven by itself. Skipped while the tab is hidden.
   function fireSpontaneously() {
     const wait = SPONTANEOUS_MIN - Math.log(1 - Math.random()) * (SPONTANEOUS_MEAN - SPONTANEOUS_MIN);
     setTimeout(() => {
-      const onScreen = nodes.filter((n) => n.x > 0 && n.y > 0 && n.x < width && n.y < height);
+      const onScreen = cortex ? cortex.cells.filter((c) => c.x > 0 && c.y > 0 && c.x < width && c.y < height) : [];
       if (!document.hidden && onScreen.length) {
-        const n = onScreen[Math.floor(Math.random() * onScreen.length)];
-        stimulate(n.x, n.y, { arouse: false, energy: SPONTANEOUS_ENERGY });
+        const c = onScreen[Math.floor(Math.random() * onScreen.length)];
+        stimulate(c.x, c.y, { arouse: false, strength: SPONTANEOUS_STRENGTH });
       }
       fireSpontaneously();
     }, wait * 1000);
@@ -341,8 +371,8 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
 
   function setTheme(isDark) {
     dark = isDark;
-    paintSprites();
-    if (nodes.length) { paintRest(); draw(); }
+    paintPalette();
+    if (cortex) { paintRest(); draw(); }
   }
 
   return { build, stimulate, setTheme };
