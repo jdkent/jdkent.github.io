@@ -2,7 +2,7 @@
 // neurons; spikes travel outward along axons and fire the neurons they reach.
 // Stimuli that arrive in quick succession raise arousal, which lets each hop
 // keep more of its energy, so rapid clicking carries waves off the page edges.
-// Neurons also fire on their own now and then, so the network is never still.
+// Neurons also fire on their own now and then.
 
 const LEVELS = 24;
 
@@ -13,9 +13,12 @@ const AROUSAL_TAU = 1.6;   // s for arousal to decay by 1/e
 const NODE_RISE = 0.25;    // s glow time constants
 const NODE_DECAY = 1.0;
 const EDGE_DECAY = 1.6;
-// Spontaneous firing: a random neuron on screen, at random intervals.
-const SPONTANEOUS_MEAN = 4;  // s between firings, on average
-const SPONTANEOUS_MIN = 1.5; // s, at least
+const CLICK_ENERGY = 0.55;  // an isolated click's stimulus
+// Spontaneous firing: a random neuron on screen, at random intervals, four
+// times as strong as a click, so it blooms out across much of the screen.
+const SPONTANEOUS_MEAN = 20; // s between firings, on average
+const SPONTANEOUS_MIN = 5;   // s, at least
+const SPONTANEOUS_ENERGY = 4 * CLICK_ENERGY;
 const MAX_SPIKES = 1500;
 // Low-power mode: when frames keep arriving slower than SLOW_FRAME (as on
 // software rendering), draw activity at half resolution with fewer spikes.
@@ -217,7 +220,7 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
       const s = current[i];
       const e = edges[s.edge];
       s.t += (s.wave.speed * dt) / e.len;
-      e.heat = Math.max(e.heat, s.energy * Math.min(1, s.t * 1.5));
+      e.heat = Math.max(e.heat, Math.min(1, s.energy) * Math.min(1, s.t * 1.5));
       if (s.t >= 1) fire(nodes[s.to], s.energy, s.wave);
       else alive.push(s);
     }
@@ -259,9 +262,11 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     for (const s of spikes) {
       const e = edges[s.edge];
       const [x, y] = quadPoint(nodes[s.from], e, nodes[s.to], s.t);
-      const size = 10 + 18 * s.energy;
-      ctx.globalAlpha = Math.min(1, 0.4 + s.energy);
-      ctx.drawImage(sprites[level(s.energy)], x - size / 2, y - size / 2, size, size);
+      // Energy above 1 (a spontaneous firing's first hops) carries further, not brighter.
+      const e1 = Math.min(1, s.energy);
+      const size = 10 + 18 * e1;
+      ctx.globalAlpha = Math.min(1, 0.4 + e1);
+      ctx.drawImage(sprites[level(e1)], x - size / 2, y - size / 2, size, size);
     }
     for (const n of nodes) {
       if (n.heat < 0.015) continue;
@@ -300,8 +305,9 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
   }
 
   // Fire the neurons nearest (x, y), in viewport pixels. With `arouse`, the
-  // stimulus also counts toward the click rate that sets how far waves travel.
-  function stimulate(x, y, { arouse = true } = {}) {
+  // stimulus also counts toward the click rate that sets how far waves travel;
+  // `energy` overrides the stimulus's own strength.
+  function stimulate(x, y, { arouse = true, energy: given } = {}) {
     if (reducedMotion || !nodes.length) return;
     const t = now();
     let drive = arousal * Math.exp(-(t - arousalAt) / AROUSAL_TAU);
@@ -309,7 +315,7 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     // 0 for an isolated click, approaching 1 as clicks come faster.
     const a = 1 - Math.exp(-Math.max(0, drive - 1) / 1.8);
     const wave = { x, y, gain: 0.64 + 0.33 * a, speed: 75 + 125 * a, fired: new Set() };
-    const energy = arouse ? 0.55 + 0.45 * a : 0.4;
+    const energy = given ?? (arouse ? CLICK_ENERGY + 0.45 * a : 0.4);
     const nearest = nodes
       .map((n) => [Math.hypot(n.x - x, n.y - y), n])
       .sort((p, q) => p[0] - q[0])
@@ -318,15 +324,14 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     start();
   }
 
-  // A neuron somewhere on screen fires by itself: a quiet wave that dies out
-  // within a few hops. Skipped while the tab is hidden.
+  // A neuron somewhere on screen fires by itself. Skipped while the tab is hidden.
   function fireSpontaneously() {
     const wait = SPONTANEOUS_MIN - Math.log(1 - Math.random()) * (SPONTANEOUS_MEAN - SPONTANEOUS_MIN);
     setTimeout(() => {
       const onScreen = nodes.filter((n) => n.x > 0 && n.y > 0 && n.x < width && n.y < height);
       if (!document.hidden && onScreen.length) {
         const n = onScreen[Math.floor(Math.random() * onScreen.length)];
-        stimulate(n.x, n.y, { arouse: false });
+        stimulate(n.x, n.y, { arouse: false, energy: SPONTANEOUS_ENERGY });
       }
       fireSpontaneously();
     }, wait * 1000);
