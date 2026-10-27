@@ -1,10 +1,12 @@
 # Category panels on the landing page, in display order.
 # `collection` names the Jekyll collection the panel lists; `limit` caps how
 # many of its newest items the panel previews before linking to `url`;
-# `dated` collections show a year beside each item.
+# `dated` collections show a year beside each item; `icon` is a Font Awesome
+# solid icon name.
 
 - key: projects
   title: Projects
+  icon: code
   summary: Neurosynth, NiMARE, and the open tools around them.
   collection: portfolio
   noun: project
@@ -13,6 +15,7 @@
 
 - key: publications
   title: Publications
+  icon: file-lines
   summary: Papers on meta-analysis methods, fMRI preprocessing, and cognitive training.
   collection: publications
   noun: paper
@@ -23,6 +26,7 @@
 
 - key: talks
   title: Talks
+  icon: microphone-lines
   summary: Conference talks, posters, and invited seminars.
   collection: talks
   noun: talk
@@ -33,6 +37,7 @@
 
 - key: teaching
   title: Teaching
+  icon: chalkboard-user
   summary: Workshops I have taught, assisted with, or organized.
   collection: teaching
   noun: workshop
@@ -43,6 +48,7 @@
 
 - key: writing
   title: Writing
+  icon: pen-nib
   summary: Notes on workflows, tooling, and building research software.
   collection: posts
   noun: post
@@ -53,6 +59,7 @@
 
 - key: cv
   title: CV
+  icon: id-card
   summary: Positions, education, and service, with a PDF copy.
   url: /cv/
   pdf: /files/James-Kent-CV.pdf

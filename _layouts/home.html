@@ -39,6 +39,7 @@
           <a class="lobe" id="tab-{{ cat.key }}" href="{{ cat.url | relative_url }}"
              data-key="{{ cat.key }}" aria-controls="panel-{{ cat.key }}">
             <span class="lobe__face lobe__face--front">
+              <i class="lobe__icon fas fa-{{ cat.icon }}" aria-hidden="true"></i>
               <span class="lobe__title">{{ cat.title }}</span>
               <span class="lobe__summary">{{ cat.summary }}</span>
               <span class="lobe__meta">
@@ -49,7 +50,7 @@
                 {% endif %}
               </span>
             </span>
-            <span class="lobe__face lobe__face--back" aria-hidden="true">{{ cat.title }}</span>
+            <span class="lobe__face lobe__face--back" aria-hidden="true"><i class="lobe__icon fas fa-{{ cat.icon }}" aria-hidden="true"></i>{{ cat.title }}</span>
           </a>
         {% endfor %}
         </div>
