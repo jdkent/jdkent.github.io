@@ -55,7 +55,7 @@
                 </a>
               {% elsif cat.key == "about" %}
                 <a class="lobe__example lobe__example--about" href="{{ more }}">
-                  <img class="lobe__portrait" src="{{ base_path }}/images/profile-face.jpg" width="176" height="176" alt="">
+                  <img class="lobe__portrait" src="{{ base_path }}/images/{{ author.avatar }}" width="720" height="720" alt="">
                   <span class="lobe__example-detail">{{ content | split: "</p>" | first | strip_html | truncatewords: 24 }}</span>
                 </a>
               {% elsif cat.pdf %}

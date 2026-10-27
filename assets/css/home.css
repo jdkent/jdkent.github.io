@@ -287,7 +287,7 @@
 
 .lobe__example--about {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-columns: 76px minmax(0, 1fr);
   align-items: center;
   gap: 14px;
 }
@@ -297,9 +297,10 @@
   line-clamp: 3;
 }
 
+/* The whole photo, arm and lights included, not a crop of the face. */
 .lobe__portrait {
-  width: 52px;
-  height: 52px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -529,7 +530,7 @@
   width: 200px;
   height: auto;
   aspect-ratio: 1;
-  border-radius: 4px;
+  border-radius: 50%;
   object-fit: cover;
 }
 
@@ -658,6 +659,16 @@
 
   .lobe__example-detail {
     font-size: 0.875rem;
+  }
+
+  .lobe__example--about {
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .lobe__portrait {
+    width: 60px;
+    height: 60px;
   }
 
   .entry {
