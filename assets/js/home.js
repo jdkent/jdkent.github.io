@@ -239,11 +239,14 @@ document.addEventListener("keydown", (event) => {
 
 // A click outside the sheet zooms out too, except on a link or button (the
 // breadcrumb, the theme switch) or on the turntable, whose click may be the
-// one zooming in.
+// one zooming in. Inside is judged by position: while the zoom animates,
+// clicks land on the root rather than on the sheet.
 document.addEventListener("click", (event) => {
   if (current.path === null || !plainClick(event)) return;
-  if (event.target.closest(".sheet, .lobes, a, button")) return;
-  go(`#${current.key}`);
+  if (event.target.closest(".lobes, a, button")) return;
+  const box = sheet.getBoundingClientRect();
+  const inside = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
+  if (!inside) go(`#${current.key}`);
 });
 
 // Pages in the sheet run site.js in embed mode, which hands their links,
