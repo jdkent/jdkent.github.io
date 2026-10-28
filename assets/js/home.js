@@ -87,7 +87,10 @@ function fireFrom(el) {
   field.stimulate(box.left + box.width / 2, box.top + box.height / 2);
 }
 
+// The inline script in home.html already set the turntable up for the first
+// paint; mark it taken over, so that script's fallback to the grid stays off.
 scene.classList.add("is-ring");
+scene.setAttribute("data-ready", "");
 scene.querySelector(".lobes__controls").hidden = false;
 const susan = createLazySusan(scene, ring, lobes, {
   reducedMotion,

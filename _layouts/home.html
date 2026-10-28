@@ -5,6 +5,7 @@
   <head>
     {% include site/head.html %}
     <link rel="stylesheet" href="{{ base_path }}/assets/css/home.css">
+    <link rel="modulepreload" href="{{ base_path }}/assets/js/lazy-susan.js">
     <script type="module" src="{{ base_path }}/assets/js/home.js"></script>
   </head>
 
@@ -24,7 +25,7 @@
              alt="Black-and-white photo of {{ author.name }} reaching up to touch one of a string of hanging light bulbs">
       </header>
 
-      <section class="lobes" aria-label="Sections">
+      <section class="lobes" aria-label="Sections" style="--n: {{ site.data.home.size }}">
         <div class="lobes__controls" hidden>
           <button class="lobes__step" type="button" data-step="-1" aria-label="Previous section">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -43,7 +44,7 @@
             {% if cat.key == "about" %}{% assign zoom = "about" %}{% else %}{% assign zoom = "page" %}{% endif %}
           {% endif %}
           {% if cat.url contains "#" %}{% assign more = cat.url %}{% else %}{% assign more = cat.url | relative_url %}{% endif %}
-          <article class="lobe" id="lobe-{{ cat.key }}" data-key="{{ cat.key }}" data-zoom="{{ zoom }}"
+          <article class="lobe" id="lobe-{{ cat.key }}" style="--i: {{ forloop.index0 }}" data-key="{{ cat.key }}" data-zoom="{{ zoom }}"
                    data-title="{{ cat.title }}" data-icon="{{ cat.icon }}" data-url="{{ cat.url | relative_url }}">
             <div class="lobe__face lobe__face--front">
               <h2 class="lobe__head">
@@ -85,6 +86,31 @@
         {% endfor %}
         </div>
       </section>
+      <script>
+        /* The turntable from the first paint, turned to the panel the address
+           names; home.js takes it over once loaded. If it never loads, the
+           panels fall back to the grid. */
+        (function () {
+          var scene = document.currentScript.previousElementSibling;
+          var lobes = scene.querySelectorAll(".lobe"), key = location.hash.slice(1).split("/")[0], front = 0;
+          for (var i = 0; i < lobes.length; i++) if (lobes[i].getAttribute("data-key") === key) front = i;
+          var controls = scene.querySelector(".lobes__controls");
+          scene.style.setProperty("--front", front);
+          lobes[front].setAttribute("data-front", "");
+          scene.classList.add("is-ring");
+          controls.hidden = false;
+          /* Also hides the bio below the panels (see home.css), which only
+             shows without JavaScript. */
+          document.documentElement.setAttribute("data-turntable", "");
+          setTimeout(function () {
+            if (scene.hasAttribute("data-ready")) return;
+            scene.classList.remove("is-ring");
+            lobes[front].removeAttribute("data-front");
+            controls.hidden = true;
+            document.documentElement.removeAttribute("data-turntable");
+          }, 8000);
+        })();
+      </script>
     </main>
 
     {% comment %}The zoomed-in panel. Without JavaScript it is the bio, below the panels;

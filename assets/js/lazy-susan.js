@@ -1,11 +1,9 @@
 // A lazy-susan menu: panels stand around a turntable seen slightly from
 // above, and the turntable spins to bring one panel to the front. Geometry
 // follows the standard CSS ring: panel i sits at rotateY(i * step)
-// translateZ(r), with r = (width / 2) / tan(pi / n), and the ring itself
+// translateZ(r), with r = (width / 2 + gap) / tan(pi / n), and the ring itself
 // rotates. Drags spin it with momentum and snap to the nearest panel.
 
-const TILT = -9;          // deg the turntable leans toward the viewer
-const GAP = 18;           // px between neighbouring panels on the ring
 const SETTLE = 0.11;      // s time constant for easing to the target angle
 const DRAG_START = 6;     // px of horizontal travel before a press becomes a drag
 const FLING = 0.2;        // s of release velocity carried into the snap
@@ -19,10 +17,15 @@ export function createLazySusan(scene, ring, panels, { onFront, reducedMotion = 
   const n = panels.length;
   const step = 360 / n;
   let radius = 0, angle = 0, target = 0, front = 0;
+  // The lean toward the viewer and the space between panels, set in home.css.
+  let tilt = 0, gap = 0;
   let frame = 0, last = 0, drag = null, suppressClick = false;
 
   function layout() {
-    radius = Math.round((ring.offsetWidth / 2 + GAP) / Math.tan(Math.PI / n));
+    const css = getComputedStyle(scene);
+    tilt = parseFloat(css.getPropertyValue("--ring-tilt"));
+    gap = parseFloat(css.getPropertyValue("--ring-gap"));
+    radius = Math.round((ring.offsetWidth / 2 + gap) / Math.tan(Math.PI / n));
     // The scene sizes itself to the ring, since the tilt lowers the front panel.
     scene.style.setProperty("--radius", `${radius}px`);
     panels.forEach((el, i) => {
@@ -32,7 +35,7 @@ export function createLazySusan(scene, ring, panels, { onFront, reducedMotion = 
   }
 
   function render() {
-    ring.style.transform = `translateZ(${-radius}px) rotateX(${TILT}deg) rotateY(${angle}deg)`;
+    ring.style.transform = `translateZ(${-radius}px) rotateX(${tilt}deg) rotateY(${angle}deg)`;
     panels.forEach((el, i) => {
       // 1 at the front of the turntable, 0 at the back.
       const depth = (Math.cos((wrap180(i * step + angle) * Math.PI) / 180) + 1) / 2;

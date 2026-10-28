@@ -127,7 +127,11 @@ body {
 }
 
 /* Turntable. The scene holds the perspective; the grid becomes the ring,
-   which lazy-susan.js rotates, and each panel has a front and a back face. */
+   which lazy-susan.js rotates, and each panel has a front and a back face.
+   Until the script measures it, the geometry below places the panels the
+   same way (panel i at i of --n turns, --front at the front), so the first
+   paint is already the turntable. --ring-gap and --ring-tilt are read by
+   lazy-susan.js too. */
 
 /* Panels keep their full size where the window has the height, and shrink
    (keeping their shape) where it does not. */
@@ -135,8 +139,11 @@ body {
   --lobe-h: clamp(200px, 28vh, 252px);
   --lobe-w: clamp(260px, min(40vw, var(--lobe-h) * 1.8), 456px);
   --ring-top: clamp(64px, 10vh, 104px);
+  --ring-gap: 18px;
+  --ring-tilt: -9deg;
+  --radius: calc((var(--lobe-w) / 2 + var(--ring-gap)) / tan(180deg / var(--n)));
   position: relative;
-  height: calc(var(--ring-top) + var(--lobe-h) + var(--radius, 300px) * 0.16 + 64px);
+  height: calc(var(--ring-top) + var(--lobe-h) + var(--radius) * 0.16 + 64px);
   /* Bleed into the gutters so side panels are clipped by the screen edge, not the column. */
   margin-inline: calc(var(--gutter) * -1);
   perspective: 1300px;
@@ -156,6 +163,7 @@ body {
   height: var(--lobe-h);
   margin-left: calc(var(--lobe-w) / -2);
   transform-style: preserve-3d;
+  transform: translateZ(calc(var(--radius) * -1)) rotateX(var(--ring-tilt)) rotateY(calc(var(--front, 0) * -360deg / var(--n)));
 }
 
 .is-ring.is-dragging .lobes__grid {
@@ -163,9 +171,11 @@ body {
 }
 
 .is-ring .lobe {
+  --depth: calc((cos((var(--i) - var(--front, 0)) * 360deg / var(--n)) + 1) / 2);
   position: absolute;
   inset: 0;
   min-height: 0;
+  transform: rotateY(calc(var(--i) * 360deg / var(--n))) translateZ(var(--radius));
   transform-style: preserve-3d;
   -webkit-tap-highlight-color: transparent;
   -webkit-user-drag: none;
@@ -359,6 +369,12 @@ body {
 
 :root[data-zoomed] {
   overflow: hidden;
+}
+
+/* With the turntable running, the bio is only shown zoomed in, so the main
+   screen keeps one height from the first paint on. */
+:root[data-turntable]:not([data-zoomed]) .zoom {
+  display: none;
 }
 
 :root[data-zoomed] .page,
@@ -683,7 +699,7 @@ body {
     --lobe-w: 264px;
     --lobe-h: clamp(188px, 26vh, 212px);
     --ring-top: clamp(56px, 9vh, 80px);
-    height: calc(var(--ring-top) + var(--lobe-h) + var(--radius, 300px) * 0.16 + 56px);
+    height: calc(var(--ring-top) + var(--lobe-h) + var(--radius) * 0.16 + 56px);
   }
 
   .page {
