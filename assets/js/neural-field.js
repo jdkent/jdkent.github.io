@@ -152,6 +152,15 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     canvas.height = Math.round(height * dpr);
     live.width = Math.round(width * scale);
     live.height = Math.round(height * scale);
+    // A window with no area yet (a background tab or pane, as it opens) has
+    // no network; site.js rebuilds once it is given a size.
+    if (!width || !height) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      cortex = null;
+      pulses = [];
+      return;
+    }
     cortex = createCortex(width, height);
     pulses = [];
     for (const c of cortex.cells) {
