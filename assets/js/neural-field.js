@@ -17,11 +17,11 @@ import { createCortex, V_REST, AXON_SPEED } from "./cortex.js";
 
 const LEVELS = 48;
 
-const TIME_SCALE = 10 / 3; // model ms per real second
+const TIME_SCALE = 5 / 3; // model ms per real second
 const RELEASE = { rest: 0.5, aroused: 0.8 };
 // Arousal outlasts the slow-motion spread, so quick presses still carry it
-// far: 12 s real is 40 ms of model time.
-const AROUSAL_TAU = 12;    // s for arousal to decay by 1/e
+// far: 24 s real is 40 ms of model time.
+const AROUSAL_TAU = 24;    // s for arousal to decay by 1/e
 const AROUSAL_AREA = 3;    // full arousal drives this much more area
 // A press: current into the cells under it, in µA/cm² for model ms.
 const PRESS = { amplitude: 14, ms: 6 };

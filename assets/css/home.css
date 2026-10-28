@@ -290,28 +290,22 @@ body {
   letter-spacing: -0.02em;
 }
 
+/* The newest item is plain text on the panel, cut short with an ellipsis. */
 .lobe__example {
   display: block;
-  margin-top: 18px;
-  padding: 10px 14px 11px;
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  margin-top: 16px;
   color: var(--ink);
   text-decoration: none;
-  transition: border-color 160ms ease;
-}
-
-.lobe__example:hover {
-  border-color: var(--rule-strong);
 }
 
 .lobe__example-title {
-  display: block;
+  display: -webkit-box;
   overflow: hidden;
-  font: 600 1.0625rem/1.4 var(--font-ui);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font: 600 1.375rem/1.3 var(--font-ui);
+  letter-spacing: -0.01em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .lobe__example:hover .lobe__example-title {
@@ -321,17 +315,26 @@ body {
 .lobe__example-detail {
   display: -webkit-box;
   overflow: hidden;
+  margin-top: 2px;
   color: var(--ink-soft);
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
   line-height: 1.4;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
 }
 
 .lobe__example--about .lobe__example-detail {
+  margin-top: 0;
+  color: var(--ink);
+  font-size: 1.25rem;
+  line-height: 1.45;
   -webkit-line-clamp: 3;
   line-clamp: 3;
+}
+
+.lobe__example--about:hover .lobe__example-detail {
+  color: var(--link);
 }
 
 .lobe__foot {
@@ -728,17 +731,19 @@ body {
 
   .lobe__example {
     margin-top: 12px;
-    padding: 8px 12px 9px;
   }
 
   .lobe__example-title {
-    font-size: 1rem;
+    font-size: 1.1875rem;
   }
 
   .lobe__example-detail {
-    font-size: 0.875rem;
+    font-size: 1rem;
   }
 
+  .lobe__example--about .lobe__example-detail {
+    font-size: 1.0625rem;
+  }
 
   .entry {
     grid-template-columns: 2.75rem minmax(0, 1fr);
@@ -761,10 +766,9 @@ body {
 
   .lobe__example {
     margin-top: 12px;
-    padding: 8px 12px 9px;
   }
 
-  .lobe__example-detail {
+  .lobe__example-title {
     -webkit-line-clamp: 1;
     line-clamp: 1;
   }
@@ -785,7 +789,8 @@ body {
     margin-top: 10px;
   }
 
-  .lobe__example-detail {
+  .lobe__example-title,
+  .lobe__example--about .lobe__example-detail {
     -webkit-line-clamp: 1;
     line-clamp: 1;
   }
