@@ -106,6 +106,8 @@ h1, h2, h3, h4, h5, h6 {
 /* Sheet: the content, on glass over the network */
 
 #main {
+  /* Long links in excerpts wrap rather than widen the page. */
+  overflow-wrap: break-word;
   max-width: var(--sheet-w);
   margin: 0 auto;
   padding: clamp(24px, 4vw, 48px);
@@ -117,9 +119,18 @@ h1, h2, h3, h4, h5, h6 {
 
 /* The theme floats these into a grid beside the sidebar, which is gone. */
 #main .page,
-#main .archive {
+#main .archive,
+#main .page__related {
   float: none;
   width: auto;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+#main .page,
+#main .archive {
   margin: 0;
   padding: 0;
 }
@@ -199,11 +210,16 @@ figure.highlight:before {
 }
 
 /* Inside the home page's zoomed panel (data-embed): the panel is the frame,
-   so the page drops its header, footer, network and sheet. */
+   so the page drops its header, footer, network and sheet, and fills the
+   editor's width, its type growing with it. */
 
 :root[data-embed],
 :root[data-embed] body {
   background: transparent;
+}
+
+:root[data-embed] {
+  font-size: clamp(16px, 10px + 1vw, 19px);
 }
 
 :root[data-embed] .site-header,
@@ -213,6 +229,7 @@ figure.highlight:before {
 }
 
 :root[data-embed] #main {
+  max-width: none;
   padding: clamp(20px, 3vw, 36px) clamp(20px, 4vw, 48px) 48px;
   border: 0;
   border-radius: 0;

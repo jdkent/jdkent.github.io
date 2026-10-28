@@ -620,6 +620,46 @@ body {
   outline: none;
 }
 
+/* In the editor the README lists and the bio fill the sheet, their type
+   growing with its width, as the pages opened in it do. */
+:root[data-zoomed] .sheet {
+  container-type: inline-size;
+  /* The page's own type, not the editor chrome's. */
+  color: var(--ink);
+  font: 400 1.0625rem/1.65 var(--font-text);
+}
+
+:root[data-zoomed] .sheet__list,
+:root[data-zoomed] .sheet__about-text {
+  font-size: clamp(1.0625rem, 0.625rem + 1cqi, 1.1875rem);
+}
+
+:root[data-zoomed] .entries,
+:root[data-zoomed] .sheet__elsewhere,
+:root[data-zoomed] .sheet__about-text {
+  max-width: none;
+}
+
+:root[data-zoomed] .entry {
+  grid-template-columns: 3.25em minmax(0, 1fr);
+}
+
+:root[data-zoomed] .entry:not(:has(.entry__year)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+:root[data-zoomed] .entry__year {
+  font-size: 0.875em;
+}
+
+:root[data-zoomed] .entry__detail {
+  font-size: 0.9em;
+}
+
+:root[data-zoomed] .sheet__elsewhere {
+  font-size: 0.9em;
+}
+
 :root[data-zoomed] .sheet {
   border: 0;
   border-radius: 0;
