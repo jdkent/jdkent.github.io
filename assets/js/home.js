@@ -152,6 +152,54 @@ document.addEventListener("keydown", (event) => {
   if (onRing && document.activeElement.closest(".lobe")) lobes[susan.target].querySelector(".lobe__more").focus({ preventScroll: true });
 });
 
+// Boot: every terminal types `sudo neuroscience` in step, and each then
+// prints its own section, the panel at the front first. The inline script in
+// home.html set data-booting for the first paint; a press or key skips ahead.
+
+const COMMAND = "sudo neuroscience";
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const bootLines = lobes.map((l) => l.querySelector(".lobe__boot"));
+
+function print(text) {
+  for (const b of bootLines) b.append(Object.assign(document.createElement("p"), { className: "lobe__boot-out", textContent: text }));
+}
+
+function endBoot() {
+  root.removeAttribute("data-booting");
+}
+
+async function boot() {
+  const typed = bootLines.map((b) => b.querySelector(".lobe__boot-cmd"));
+  await sleep(600);
+  for (let i = 1; i <= COMMAND.length; i++) {
+    if (!root.hasAttribute("data-booting")) return;
+    for (const t of typed) t.textContent = COMMAND.slice(0, i);
+    await sleep(45 + Math.random() * 55);
+  }
+  await sleep(260);
+  print("[sudo] password for jdkent: ");
+  await sleep(700);
+  bootLines.forEach((b, i) => {
+    b.lastElementChild.textContent += "*".repeat(8);
+    b.append(Object.assign(document.createElement("p"), { className: "lobe__boot-out", textContent: `Loading ${lobes[i].dataset.title}...` }));
+  });
+  await sleep(500);
+  // Outward from the front, both ways round.
+  const n = lobes.length;
+  const order = lobes.map((_, i) => i).sort((a, b) => {
+    const d = (i) => Math.min(Math.abs(i - susan.front), n - Math.abs(i - susan.front));
+    return d(a) - d(b);
+  });
+  for (const i of order) {
+    if (!root.hasAttribute("data-booting")) return;
+    lobes[i].setAttribute("data-booted", "");
+    if (i === susan.front) fireFrom(lobes[i]);
+    await sleep(110);
+  }
+  await sleep(400);
+  endBoot();
+}
+
 // Zoom
 
 function load(path) {
@@ -308,3 +356,9 @@ select(byKey[initial.key]);
 susan.goTo(lobes.indexOf(byKey[initial.key]), { instant: true });
 apply(initial);
 ready = true;
+
+if (root.hasAttribute("data-booting")) {
+  scene.addEventListener("pointerdown", endBoot, { once: true });
+  document.addEventListener("keydown", endBoot, { once: true });
+  boot();
+}

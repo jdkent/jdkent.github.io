@@ -4,6 +4,7 @@
 <html lang="{{ site.locale | slice: 0,2 }}">
   <head>
     {% include site/head.html %}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@500&family=Ubuntu+Mono:wght@400;700&display=swap">
     <link rel="stylesheet" href="{{ base_path }}/assets/css/home.css">
     <link rel="modulepreload" href="{{ base_path }}/assets/js/lazy-susan.js">
     <script type="module" src="{{ base_path }}/assets/js/home.js"></script>
@@ -47,39 +48,48 @@
           <article class="lobe" id="lobe-{{ cat.key }}" style="--i: {{ forloop.index0 }}" data-key="{{ cat.key }}" data-zoom="{{ zoom }}"
                    data-title="{{ cat.title }}" data-icon="{{ cat.icon }}" data-url="{{ cat.url | relative_url }}">
             <div class="lobe__face lobe__face--front">
-              <h2 class="lobe__head">
-                <i class="lobe__icon fas fa-{{ cat.icon }}" aria-hidden="true"></i>
-                <span class="lobe__title">{{ cat.title }}</span>
-              </h2>
-              {% if docs.size > 0 %}
-                {% assign newest = docs | first %}
-                {% capture detail %}{% include home/detail.html item=newest %}{% endcapture %}
-                <a class="lobe__example" href="{{ newest.url | relative_url }}">
-                  <span class="lobe__example-title">{{ newest.title }}</span>
-                  <span class="lobe__example-detail">{{ detail | strip }}</span>
-                </a>
-              {% elsif cat.key == "about" %}
-                <a class="lobe__example lobe__example--about" href="{{ more }}">
-                  <span class="lobe__example-detail">{{ content | split: "</p>" | first | strip_html | truncatewords: 24 }}</span>
-                </a>
-              {% elsif cat.pdf %}
-                <a class="lobe__example" href="{{ cat.pdf | relative_url }}" target="_blank" rel="noopener">
-                  <span class="lobe__example-title">Download the PDF</span>
-                  <span class="lobe__example-detail">Positions, education, publications, talks, teaching, and service.</span>
-                </a>
-              {% endif %}
-              <p class="lobe__foot">
-                <span class="lobe__meta">
-                  {% if docs.size > 0 %}
-                    {{ docs.size }} {% if docs.size == 1 %}{{ cat.noun }}{% else %}{{ cat.nouns }}{% endif %}{% if cat.dated %}{% assign oldest = docs | last %}{% assign y0 = oldest.date | date: "%Y" %}{% assign y1 = newest.date | date: "%Y" %}, <span class="lobe__years">{{ y0 }}{% if y1 != y0 %}–{{ y1 }}{% endif %}</span>{% endif %}
-                  {% elsif cat.pdf %}
-                    Web and PDF
-                  {% else %}
-                    Bio and contact
-                  {% endif %}
-                </span>
-                <a class="lobe__more" href="{{ more }}">See more</a>
-              </p>
+              <div class="lobe__bar" aria-hidden="true">
+                <span class="lobe__bar-title">jdkent@neuro: ~/{{ cat.key }}</span>
+                <span class="lobe__bar-buttons"><i></i><i></i><i></i></span>
+              </div>
+              <div class="lobe__screen">
+                <div class="lobe__boot" aria-hidden="true">
+                  <p class="lobe__boot-line"><span class="lobe__prompt">jdkent@neuro</span>:<span class="lobe__path">~</span>$ <span class="lobe__boot-cmd"></span></p>
+                </div>
+                <h2 class="lobe__head">
+                  <i class="lobe__icon fas fa-{{ cat.icon }}" aria-hidden="true"></i>
+                  <span class="lobe__title">{{ cat.title }}</span>
+                </h2>
+                {% if docs.size > 0 %}
+                  {% assign newest = docs | first %}
+                  {% capture detail %}{% include home/detail.html item=newest %}{% endcapture %}
+                  <a class="lobe__example" href="{{ newest.url | relative_url }}">
+                    <span class="lobe__example-title">{{ newest.title }}</span>
+                    <span class="lobe__example-detail">{{ detail | strip }}</span>
+                  </a>
+                {% elsif cat.key == "about" %}
+                  <a class="lobe__example lobe__example--about" href="{{ more }}">
+                    <span class="lobe__example-detail">{{ content | split: "</p>" | first | strip_html | truncatewords: 24 }}</span>
+                  </a>
+                {% elsif cat.pdf %}
+                  <a class="lobe__example" href="{{ cat.pdf | relative_url }}" target="_blank" rel="noopener">
+                    <span class="lobe__example-title">Download the PDF</span>
+                    <span class="lobe__example-detail">Positions, education, publications, talks, teaching, and service.</span>
+                  </a>
+                {% endif %}
+                <p class="lobe__foot">
+                  <span class="lobe__meta">
+                    {% if docs.size > 0 %}
+                      {{ docs.size }} {% if docs.size == 1 %}{{ cat.noun }}{% else %}{{ cat.nouns }}{% endif %}{% if cat.dated %}{% assign oldest = docs | last %}{% assign y0 = oldest.date | date: "%Y" %}{% assign y1 = newest.date | date: "%Y" %}, <span class="lobe__years">{{ y0 }}{% if y1 != y0 %}–{{ y1 }}{% endif %}</span>{% endif %}
+                    {% elsif cat.pdf %}
+                      Web and PDF
+                    {% else %}
+                      Bio and contact
+                    {% endif %}
+                  </span>
+                  <a class="lobe__more" href="{{ more }}">See more</a>
+                </p>
+              </div>
             </div>
             <span class="lobe__face lobe__face--back" aria-hidden="true"><i class="lobe__icon fas fa-{{ cat.icon }}" aria-hidden="true"></i>{{ cat.title }}</span>
           </article>
@@ -99,6 +109,10 @@
           lobes[front].setAttribute("data-front", "");
           scene.classList.add("is-ring");
           controls.hidden = false;
+          /* Each terminal starts at a bare prompt, and home.js types the boot
+             command into it; a zoomed-in address skips that. */
+          var booting = location.hash.indexOf("/") < 0 && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+          if (booting) document.documentElement.setAttribute("data-booting", "");
           /* Also hides the bio below the panels (see home.css), which only
              shows without JavaScript. */
           document.documentElement.setAttribute("data-turntable", "");
@@ -108,6 +122,7 @@
             lobes[front].removeAttribute("data-front");
             controls.hidden = true;
             document.documentElement.removeAttribute("data-turntable");
+            document.documentElement.removeAttribute("data-booting");
           }, 8000);
         })();
       </script>
