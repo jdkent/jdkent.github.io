@@ -214,6 +214,9 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
   const onSpike = (c, sent) => {
     c.waves.push(cortex.time);
     if (c.waves.length > WAVES_KEPT) c.waves.shift();
+    // A fixed random rank picks which pulses are drawn when there are more
+    // than maxPulses, so every area thins evenly, not the newest activity.
+    for (const e of sent) e.rank = Math.random();
     pulses.push(...sent);
   };
   // How far along its axon (px) a spike's pulse has run; past the end once arrived.
@@ -264,8 +267,10 @@ export function createNeuralField(canvas, { reducedMotion = false, onSlow = () =
     };
 
     // Axon pulses, in short pieces whose brightness follows the pulse.
-    for (let k = 0; k < pulses.length && k < maxPulses; k++) {
-      const e = pulses[k], s = cortex.synapses[e.syn];
+    const share = maxPulses / pulses.length;
+    for (const e of pulses) {
+      if (e.rank >= share) continue;
+      const s = cortex.synapses[e.syn];
       const head = e.head ?? headOf(e);
       // The pulse's pieces lie on a grid starting AXON_PULSE.tail * 6 behind
       // its head (or at the axon's start); those further back than `visible`
