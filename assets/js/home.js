@@ -278,9 +278,9 @@ function showInExplorer(state) {
   fileLinks.get(hash)?.scrollIntoView({ block: "nearest" });
 }
 
-// Tabs: every file opened stays open until its tab is closed, across
-// sections and zooming out; closing the last one zooms out, and the title
-// bar's close button closes them all.
+// Tabs: every file opened stays open, across sections, until its tab is
+// closed or the editor is: zooming out, however it happens, closes them all
+// (as the title bar's close button does), and closing the last one zooms out.
 
 let tabs = [];
 
@@ -513,7 +513,8 @@ function apply(state) {
   zoom.hidden = !zoomed;
   page.inert = zoomed;
   colophon.inert = zoomed;
-  if (zoomed) {
+  if (!zoomed) tabs = [];
+  else {
     if (!tabs.includes(hashOf(state))) tabs.push(hashOf(state));
     fill(state);
     showInExplorer(state);
