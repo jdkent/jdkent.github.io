@@ -3,8 +3,10 @@ import { field, reducedMotion } from "./site.js";
 
 // Home: a turntable of panels, each showing its newest item. A panel zooms
 // in place into the whole section: the name moves up into a breadcrumb and
-// the panel grows into a sheet, which shows the section's list, the bio, or
-// a page. Pages open in the sheet too, so you never leave home. The hash
+// the panel grows into a code editor. Its explorer lists every section as a
+// folder of files, one per entry, and each file opens in a tab of the sheet,
+// which shows the section's list (its README), the bio, or a page. Pages open
+// in the sheet too, so you never leave home. The hash
 // records where you are, and show() draws the page from it:
 //   #key         the panel at the front of the turntable
 //   #key/        the panel zoomed in
@@ -23,6 +25,10 @@ const crumbs = zoom.querySelector(".crumbs");
 const homeCrumb = crumbs.querySelector(".crumbs__home");
 const sectionCrumb = crumbs.querySelector(".crumbs__section a");
 const itemCrumb = crumbs.querySelector(".crumbs__item");
+const ide = zoom.querySelector(".ide");
+const explorer = ide.querySelector(".ide__explorer");
+const tree = explorer.querySelector(".tree");
+const tabBar = ide.querySelector(".ide__tabs");
 const sheet = zoom.querySelector(".sheet");
 const about = sheet.querySelector(".sheet__about");
 const lists = Object.fromEntries([...sheet.querySelectorAll("template[data-list]")].map((t) => [t.dataset.list, t]));
@@ -43,6 +49,9 @@ for (const [key, t] of Object.entries(lists)) {
 }
 const sections = new Map(lobes.filter((l) => l.dataset.zoom !== "about").map((l) => [pathOf(l.dataset.url), l.dataset.key]));
 
+// A page's file name: the last part of its path, less any leading date.
+const fileName = (path) => `${path.split("/").filter(Boolean).pop().replace(/^\d{4}-\d{2}-\d{2}-/, "")}.md`;
+
 // The hash for a page of this site, opened from the panel `from`.
 function hashFor(path, from) {
   if (path === pathOf("/")) return `#${from}`;
@@ -54,6 +63,9 @@ function parse(hash) {
   const [, key, path = null] = /^#([\w-]+)(\/.*)?$/.exec(decodeURI(hash)) || [];
   return key in byKey ? { key, path } : { key: lobes[0].dataset.key, path: null };
 }
+
+// The hash showing a zoomed-in state.
+const hashOf = ({ key, path }) => (path === "/" ? `#${key}/` : `#${key}${path}`);
 
 let current = { key: null, path: null };
 let ready = false;
@@ -154,7 +166,8 @@ document.addEventListener("keydown", (event) => {
 
 // Boot: every terminal types `sudo neuroscience` in step, and each then
 // prints its own section, the panel at the front first. The inline script in
-// home.html set data-booting for the first paint; a press or key skips ahead.
+// home.html set data-booting for the first paint. It runs to the end however
+// the turntable is turned meanwhile.
 
 const COMMAND = "sudo neuroscience";
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -164,15 +177,10 @@ function print(text) {
   for (const b of bootLines) b.append(Object.assign(document.createElement("p"), { className: "lobe__boot-out", textContent: text }));
 }
 
-function endBoot() {
-  root.removeAttribute("data-booting");
-}
-
 async function boot() {
   const typed = bootLines.map((b) => b.querySelector(".lobe__boot-cmd"));
   await sleep(600);
   for (let i = 1; i <= COMMAND.length; i++) {
-    if (!root.hasAttribute("data-booting")) return;
     for (const t of typed) t.textContent = COMMAND.slice(0, i);
     await sleep(45 + Math.random() * 55);
   }
@@ -191,14 +199,133 @@ async function boot() {
     return d(a) - d(b);
   });
   for (const i of order) {
-    if (!root.hasAttribute("data-booting")) return;
     lobes[i].setAttribute("data-booted", "");
     if (i === susan.front) fireFrom(lobes[i]);
     await sleep(110);
   }
   await sleep(400);
-  endBoot();
+  root.removeAttribute("data-booting");
 }
+
+// Explorer: a folder per section, holding its README (the zoomed panel
+// itself), a file per entry, and for the CV, the PDF. The open section's
+// folder unfolds; the others fold and unfold on a click.
+
+const folders = {};
+const fileLinks = new Map();
+
+function file(hash, name, icon, title) {
+  const a = Object.assign(document.createElement("a"), { className: "tree__row tree__file", href: hash });
+  if (title) a.title = title;
+  a.innerHTML = `<i class="${icon}" aria-hidden="true"></i><span></span>`;
+  a.lastChild.textContent = name;
+  fileLinks.set(hash, a);
+  const li = document.createElement("li");
+  li.append(a);
+  return li;
+}
+
+for (const lobe of lobes) {
+  const key = lobe.dataset.key;
+  const li = Object.assign(document.createElement("li"), { className: "tree__folder" });
+  const toggle = Object.assign(document.createElement("button"), { type: "button", className: "tree__row tree__toggle" });
+  toggle.innerHTML = `<i class="tree__chevron fas fa-chevron-right" aria-hidden="true"></i><i class="fas fa-folder" aria-hidden="true"></i><span></span>`;
+  toggle.lastChild.textContent = key;
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.addEventListener("click", () => toggle.setAttribute("aria-expanded", String(toggle.getAttribute("aria-expanded") !== "true")));
+  const files = document.createElement("ul");
+  files.append(file(`#${key}/`, "README.md", "fas fa-circle-info", `${lobe.dataset.title}: all`));
+  for (const a of lists[key]?.content.querySelectorAll(".entry__title") ?? []) {
+    const path = pathOf(a.getAttribute("href"));
+    files.append(file(hashFor(path, key), fileName(path), "fab fa-markdown", a.textContent.trim()));
+  }
+  const pdf = lobe.querySelector('a[target="_blank"]');
+  if (pdf) {
+    const li = file(pdf.getAttribute("href"), pdf.getAttribute("href").split("/").pop(), "fas fa-file-pdf", "Opens in a new tab");
+    li.firstChild.target = "_blank";
+    li.firstChild.rel = "noopener";
+    files.append(li);
+  }
+  li.append(toggle, files);
+  tree.append(li);
+  folders[key] = toggle;
+}
+
+tree.addEventListener("click", (event) => {
+  const link = event.target.closest("a");
+  if (!link || link.target === "_blank" || !plainClick(event)) return;
+  event.preventDefault();
+  go(link.getAttribute("href"));
+});
+
+function showInExplorer(state) {
+  folders[state.key].setAttribute("aria-expanded", "true");
+  const hash = hashOf(state);
+  for (const [h, a] of fileLinks) {
+    if (h === hash) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  }
+  fileLinks.get(hash)?.scrollIntoView({ block: "nearest" });
+}
+
+// Tabs: every file opened stays open until its tab is closed, across
+// sections and zooming out; closing the last one zooms out.
+
+let tabs = [];
+
+function tabLabel(hash) {
+  const { key, path } = parse(hash);
+  return path === "/" ? { name: "README.md", folder: key } : { name: fileName(path), folder: key, title: items.get(path)?.title };
+}
+
+function renderTabs() {
+  const active = current.path === null ? null : hashOf(current);
+  tabBar.replaceChildren(...tabs.map((hash) => {
+    const { name, folder, title } = tabLabel(hash);
+    const li = Object.assign(document.createElement("li"), { className: "ide__tab" });
+    const a = Object.assign(document.createElement("a"), { className: "ide__tab-open", href: hash });
+    if (title) a.title = title;
+    a.innerHTML = `<i class="${name === "README.md" ? "fas fa-circle-info" : "fab fa-markdown"}" aria-hidden="true"></i><span class="ide__tab-name"></span><span class="ide__tab-folder"></span>`;
+    a.querySelector(".ide__tab-name").textContent = name;
+    a.querySelector(".ide__tab-folder").textContent = folder;
+    if (hash === active) a.setAttribute("aria-current", "page");
+    const close = Object.assign(document.createElement("button"), { type: "button", className: "ide__tab-close" });
+    close.setAttribute("aria-label", `Close ${name}`);
+    close.dataset.hash = hash;
+    close.innerHTML = `<i class="fas fa-xmark" aria-hidden="true"></i>`;
+    li.append(a, close);
+    return li;
+  }));
+  tabBar.querySelector("[aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+function closeTab(hash) {
+  const i = tabs.indexOf(hash);
+  tabs = tabs.filter((h) => h !== hash);
+  if (current.path === null || hash !== hashOf(current)) renderTabs();
+  else if (tabs.length) go(tabs[Math.min(i, tabs.length - 1)]);
+  else go(`#${current.key}`);
+}
+
+tabBar.addEventListener("click", (event) => {
+  const close = event.target.closest(".ide__tab-close");
+  if (close) {
+    closeTab(close.dataset.hash);
+    return;
+  }
+  const link = event.target.closest("a");
+  if (!link || !plainClick(event)) return;
+  event.preventDefault();
+  go(link.getAttribute("href"));
+});
+
+// A middle click closes a tab, as in the editor.
+tabBar.addEventListener("auxclick", (event) => {
+  const tab = event.target.closest(".ide__tab");
+  if (event.button !== 1 || !tab) return;
+  event.preventDefault();
+  closeTab(tab.querySelector(".ide__tab-close").dataset.hash);
+});
 
 // Zoom
 
@@ -253,7 +380,12 @@ function apply(state) {
   zoom.hidden = !zoomed;
   page.inert = zoomed;
   colophon.inert = zoomed;
-  if (zoomed) fill(state);
+  if (zoomed) {
+    if (!tabs.includes(hashOf(state))) tabs.push(hashOf(state));
+    fill(state);
+    showInExplorer(state);
+  }
+  renderTabs();
   if (!ready) return;
   // Keep focus in the sheet when the link that had it goes (a list giving
   // way to a page), and return it to the panel on zooming out.
@@ -309,14 +441,14 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && current.path !== null) go(`#${current.key}`);
 });
 
-// A click outside the sheet zooms out too, except on a link or button (the
+// A click outside the editor zooms out too, except on a link or button (the
 // breadcrumb, the theme switch) or on the turntable, whose click may be the
 // one zooming in. Inside is judged by position: while the zoom animates,
-// clicks land on the root rather than on the sheet.
+// clicks land on the root rather than on the editor.
 document.addEventListener("click", (event) => {
   if (current.path === null || !plainClick(event)) return;
   if (event.target.closest(".lobes, a, button")) return;
-  const box = sheet.getBoundingClientRect();
+  const box = ide.getBoundingClientRect();
   const inside = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
   if (!inside) go(`#${current.key}`);
 });
@@ -351,14 +483,12 @@ new MutationObserver(() => {
 }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
 
 crumbs.hidden = false;
+explorer.hidden = false;
+tabBar.hidden = false;
 const initial = parse(location.hash);
 select(byKey[initial.key]);
 susan.goTo(lobes.indexOf(byKey[initial.key]), { instant: true });
 apply(initial);
 ready = true;
 
-if (root.hasAttribute("data-booting")) {
-  scene.addEventListener("pointerdown", endBoot, { once: true });
-  document.addEventListener("keydown", endBoot, { once: true });
-  boot();
-}
+if (root.hasAttribute("data-booting")) boot();

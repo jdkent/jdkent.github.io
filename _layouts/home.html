@@ -129,7 +129,8 @@
     </main>
 
     {% comment %}The zoomed-in panel. Without JavaScript it is the bio, below the panels;
-    with it, a panel opens into it, under a breadcrumb that the name moves into.{% endcomment %}
+    with it, a panel opens into it, under a breadcrumb that the name moves into, as a
+    code editor: every section's entries as files in the explorer, each opening in a tab.{% endcomment %}
     <div class="zoom">
       <nav class="crumbs" aria-label="Breadcrumb" hidden>
         <ol>
@@ -138,30 +139,53 @@
           <li class="crumbs__item" hidden><span aria-current="page"></span></li>
         </ol>
       </nav>
-      <div class="sheet" tabindex="-1">
-        <section class="sheet__about" id="bio" aria-labelledby="about-heading">
-          <h2 id="about-heading" class="visually-hidden">About</h2>
-          <div class="sheet__about-text">
-            {{ content }}
+      <div class="ide">
+        <div class="ide__titlebar" aria-hidden="true">
+          <span class="ide__menu"><span>File</span><span>Edit</span><span>Selection</span><span>View</span><span>Go</span><span>Run</span><span>Help</span></span>
+          <span class="ide__command"><i class="fas fa-magnifying-glass"></i>jdkent.github.io</span>
+          <span class="lobe__bar-buttons"><i></i><i></i><i></i></span>
+        </div>
+        <div class="ide__body">
+          <nav class="ide__explorer" aria-label="Explorer" hidden>
+            <p class="ide__explorer-head" aria-hidden="true">Explorer</p>
+            <p class="ide__root" aria-hidden="true"><i class="fas fa-chevron-down"></i>jdkent.github.io</p>
+            <ul class="tree"></ul>
+          </nav>
+          <div class="ide__editor">
+            <ol class="ide__tabs" aria-label="Open editors" hidden></ol>
+            <div class="sheet" tabindex="-1">
+              <section class="sheet__about" id="bio" aria-labelledby="about-heading">
+                <h2 id="about-heading" class="visually-hidden">About</h2>
+                <div class="sheet__about-text">
+                  {{ content }}
+                </div>
+              </section>
+              {% for cat in site.data.home %}
+                {% if cat.collection %}
+                  {% assign docs = site[cat.collection] | sort: "date" | reverse %}
+                  <template data-list="{{ cat.key }}">
+                    {% if cat.elsewhere %}
+                      <p class="sheet__elsewhere">
+                        <a href="{{ site.author[cat.elsewhere.profile] }}" target="_blank" rel="noopener"><i class="{{ cat.elsewhere.icon }}" aria-hidden="true"></i>{{ cat.elsewhere.label }}</a>
+                      </p>
+                    {% endif %}
+                    <ol class="entries">
+                      {% for item in docs %}
+                        {% include home/entry.html item=item dated=cat.dated %}
+                      {% endfor %}
+                    </ol>
+                  </template>
+                {% endif %}
+              {% endfor %}
+            </div>
           </div>
-        </section>
-        {% for cat in site.data.home %}
-          {% if cat.collection %}
-            {% assign docs = site[cat.collection] | sort: "date" | reverse %}
-            <template data-list="{{ cat.key }}">
-              {% if cat.elsewhere %}
-                <p class="sheet__elsewhere">
-                  <a href="{{ site.author[cat.elsewhere.profile] }}" target="_blank" rel="noopener"><i class="{{ cat.elsewhere.icon }}" aria-hidden="true"></i>{{ cat.elsewhere.label }}</a>
-                </p>
-              {% endif %}
-              <ol class="entries">
-                {% for item in docs %}
-                  {% include home/entry.html item=item dated=cat.dated %}
-                {% endfor %}
-              </ol>
-            </template>
-          {% endif %}
-        {% endfor %}
+        </div>
+        <div class="ide__status" aria-hidden="true">
+          <span><i class="fas fa-code-branch"></i>master</span>
+          <span><i class="fas fa-circle-check"></i>0 problems</span>
+          <span class="ide__status-end">UTF-8</span>
+          <span>Markdown</span>
+        </div>
       </div>
     </div>
 

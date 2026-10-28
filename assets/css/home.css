@@ -504,11 +504,12 @@ body {
   font: 700 1rem/1.2 var(--font-term);
 }
 
-/* Zoom: a panel opened in place. The name sits in the breadcrumb above it,
-   and the rest of the page stays behind, hidden, until it closes. */
+/* Zoom: a panel opened in place, as a code editor. The name sits in the
+   breadcrumb above it, and the rest of the page stays behind, hidden, until
+   it closes. */
 
 .zoom {
-  width: min(100%, 1080px);
+  width: min(100%, 1280px);
   margin: 0 auto;
   padding: clamp(48px, 9vh, 88px) var(--gutter) 0;
 }
@@ -620,8 +621,323 @@ body {
 }
 
 :root[data-zoomed] .sheet {
+  border: 0;
+  border-radius: 0;
+  background: var(--ide-editor);
   overflow: auto;
   overscroll-behavior: contain;
+}
+
+/* The editor: a title bar with the command center, the explorer beside the
+   open tabs and the sheet, and a status bar, in the colors of VS Code's
+   Modern themes. Without JavaScript only the sheet shows, as the bio. */
+
+.ide {
+  --ide-chrome: #f8f8f8;
+  --ide-editor: #ffffff;
+  --ide-border: #e5e5e5;
+  --ide-text: #3b3b3b;
+  --ide-dim: #767676;
+  --ide-hover: rgba(0, 0, 0, 0.05);
+  --ide-select: #e4e6f1;
+  --ide-accent: #0078d4;
+  --ide-status: #007acc;
+  --ide-markdown: #519aba;
+  --ide-folder: #c09553;
+  --font-ide: "Ubuntu", system-ui, sans-serif;
+}
+
+:root[data-theme="dark"] .ide {
+  --ide-chrome: #181818;
+  --ide-editor: #1f1f1f;
+  --ide-border: #2b2b2b;
+  --ide-text: #cccccc;
+  --ide-dim: #9d9d9d;
+  --ide-hover: rgba(255, 255, 255, 0.06);
+  --ide-select: #37373d;
+  --ide-folder: #dcb67a;
+}
+
+:root:not([data-zoomed]) .ide__titlebar,
+:root:not([data-zoomed]) .ide__status {
+  display: none;
+}
+
+:root[data-zoomed] .ide {
+  display: grid;
+  grid-template-rows: 32px minmax(0, 1fr) 22px;
+  min-height: 0;
+  border: 1px solid var(--ide-border);
+  border-radius: 10px;
+  background: var(--ide-chrome);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+  color: var(--ide-text);
+  font: 400 0.8125rem/1.4 var(--font-ide);
+  overflow: hidden;
+}
+
+.ide__titlebar {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 360px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--ide-border);
+}
+
+.ide__menu {
+  display: flex;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.ide__menu span {
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.ide__command {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 22px;
+  border: 1px solid var(--ide-border);
+  border-radius: 6px;
+  background: var(--ide-hover);
+  color: var(--ide-dim);
+  font-size: 0.75rem;
+}
+
+.ide__titlebar .lobe__bar-buttons {
+  right: 10px;
+}
+
+.ide__titlebar .lobe__bar-buttons i {
+  background: var(--ide-border);
+}
+
+.ide__titlebar .lobe__bar-buttons i:last-child {
+  background: #e95420;
+}
+
+.ide__body {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.ide__explorer {
+  min-height: 0;
+  padding-bottom: 12px;
+  border-right: 1px solid var(--ide-border);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.ide__explorer-head,
+.ide__root {
+  margin: 0;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ide__explorer-head {
+  padding: 10px 20px 8px;
+  color: var(--ide-dim);
+}
+
+.ide__root {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  font-weight: 700;
+}
+
+.ide__root i {
+  width: 12px;
+  font-size: 0.625rem;
+}
+
+.tree,
+.tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tree__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 22px;
+  padding: 0 8px 0 18px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tree__row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree__row:hover {
+  background: var(--ide-hover);
+}
+
+.tree__row:focus-visible {
+  outline: 1px solid var(--ide-accent);
+  outline-offset: -1px;
+}
+
+.tree__file {
+  padding-left: 42px;
+}
+
+.tree__file[aria-current] {
+  background: var(--ide-select);
+}
+
+.tree__chevron {
+  width: 12px;
+  font-size: 0.625rem;
+  transition: transform 120ms ease;
+}
+
+.tree__toggle[aria-expanded="true"] .tree__chevron {
+  transform: rotate(90deg);
+}
+
+.tree__toggle .fa-folder {
+  color: var(--ide-folder);
+}
+
+.tree__toggle[aria-expanded="true"] .fa-folder::before {
+  content: "\f07c";
+}
+
+.tree__toggle[aria-expanded="false"] + ul {
+  display: none;
+}
+
+.tree .fa-markdown,
+.tree .fa-circle-info,
+.ide__tab .fa-markdown,
+.ide__tab .fa-circle-info {
+  color: var(--ide-markdown);
+}
+
+.tree .fa-file-pdf {
+  color: #e05757;
+}
+
+.ide__editor {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.ide__tabs {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--ide-border);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ide__tab {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 35px;
+  border-right: 1px solid var(--ide-border);
+}
+
+.ide__tab:has([aria-current]) {
+  margin-bottom: -1px;
+  background: var(--ide-editor);
+  box-shadow: inset 0 1px var(--ide-accent);
+}
+
+.ide__tab-open {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 2px 0 12px;
+  color: var(--ide-dim);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ide__tab-open[aria-current],
+.ide__tab-open:hover {
+  color: var(--ide-text);
+}
+
+.ide__tab-folder {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.ide__tab-close {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin: 0 6px 0 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.ide__tab:hover .ide__tab-close,
+.ide__tab:has([aria-current]) .ide__tab-close,
+.ide__tab-close:focus-visible {
+  opacity: 1;
+}
+
+.ide__tab-close:hover {
+  background: var(--ide-hover);
+}
+
+.ide__status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 10px;
+  background: var(--ide-status);
+  color: #ffffff;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.ide__status i {
+  margin-right: 5px;
+}
+
+.ide__status-end {
+  margin-left: auto;
 }
 
 /* A page in the sheet scrolls inside its frame. */
@@ -756,7 +1072,7 @@ body {
 }
 
 :root:not([data-zoomed]) .lobe[data-front] .lobe__face--front,
-:root[data-zoomed] .sheet {
+:root[data-zoomed] .ide {
   view-transition-name: panel;
 }
 
@@ -827,6 +1143,28 @@ body {
   /* The breadcrumb drops below the theme switch. */
   .crumbs ol {
     padding: 64px 0 16px;
+  }
+
+  /* The explorer sits above the editor, so the entries stay in view. */
+  .ide__body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 36%) minmax(0, 1fr);
+  }
+
+  .ide__explorer {
+    border-right: 0;
+    border-bottom: 1px solid var(--ide-border);
+  }
+
+  .ide__titlebar {
+    grid-template-columns: minmax(0, 1fr);
+    padding-right: 70px;
+  }
+
+  .ide__menu,
+  .ide__status-end ~ span,
+  .ide__status-end {
+    display: none;
   }
 }
 
