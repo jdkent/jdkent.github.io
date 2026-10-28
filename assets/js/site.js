@@ -40,6 +40,8 @@ if (embedded) {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") toHome({ type: "escape" });
   });
+  // Modules run once the page is parsed and its styles are in: ready to show.
+  toHome({ type: "ready" });
 }
 
 // Theme: the same "theme" localStorage key the rest of the site uses.

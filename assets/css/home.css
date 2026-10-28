@@ -162,14 +162,14 @@ body {
   transform: translateY(-50%);
 }
 
-.lobe__bar-buttons i {
+.lobe__bar-buttons > i {
   width: 14px;
   height: 14px;
   border-radius: 50%;
   background: #4a4a4a;
 }
 
-.lobe__bar-buttons i:last-child {
+.lobe__bar-buttons > i:last-child {
   background: var(--term-orange);
 }
 
@@ -644,6 +644,8 @@ body {
   --ide-status: #007acc;
   --ide-markdown: #519aba;
   --ide-folder: #c09553;
+  --ide-menu: #ffffff;
+  --ide-menu-border: #cecece;
   --font-ide: "Ubuntu", system-ui, sans-serif;
 }
 
@@ -656,6 +658,8 @@ body {
   --ide-hover: rgba(255, 255, 255, 0.06);
   --ide-select: #37373d;
   --ide-folder: #dcb67a;
+  --ide-menu: #1f1f1f;
+  --ide-menu-border: #454545;
 }
 
 :root:not([data-zoomed]) .ide__titlebar,
@@ -714,18 +718,78 @@ body {
   right: 10px;
 }
 
-.ide__titlebar .lobe__bar-buttons i {
+.ide__titlebar .lobe__bar-buttons > i {
   background: var(--ide-border);
 }
 
-.ide__titlebar .lobe__bar-buttons i:last-child {
+/* The close button zooms out, closing every tab. */
+.ide__close {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
   background: #e95420;
+  color: #ffffff;
+  cursor: pointer;
 }
 
+.ide__close:hover {
+  background: #f06a3a;
+}
+
+.ide__close:focus-visible {
+  outline: 2px solid var(--ide-accent);
+  outline-offset: 2px;
+}
+
+/* A larger target than it looks, as on a touch screen it must be. */
+.ide__close::after {
+  content: "";
+  position: absolute;
+  inset: -8px -10px;
+}
+
+
 .ide__body {
+  position: relative;
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: var(--explorer-w, 248px) minmax(0, 1fr);
   min-height: 0;
+}
+
+/* The sash on the explorer's edge: dragged to resize it, lit while held. */
+.ide__sash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--explorer-w, 248px) - 2px);
+  z-index: 1;
+  width: 4px;
+  cursor: col-resize;
+  touch-action: none;
+  transition: background-color 120ms ease 150ms;
+}
+
+.ide__sash:hover,
+.ide__sash:focus-visible,
+.is-resizing > .ide__sash {
+  outline: none;
+  background: var(--ide-accent);
+}
+
+/* The page in the sheet would take the pointer from the drag. */
+.ide__body.is-resizing {
+  cursor: col-resize;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ide__body.is-resizing .sheet__frame {
+  pointer-events: none;
 }
 
 .ide__explorer {
@@ -938,6 +1002,46 @@ body {
 
 .ide__status-end {
   margin-left: auto;
+}
+
+/* The tab menu. */
+.tab-menu {
+  position: fixed;
+  z-index: 3;
+  min-width: 200px;
+  padding: 4px;
+  border: 1px solid var(--ide-menu-border);
+  border-radius: 6px;
+  background: var(--ide-menu);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.36);
+  color: var(--ide-text);
+  font: 400 0.8125rem/1 var(--font-ide);
+}
+
+.tab-menu button {
+  display: block;
+  width: 100%;
+  height: 26px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tab-menu button:hover:not(:disabled),
+.tab-menu button:focus-visible {
+  outline: none;
+  background: var(--ide-accent);
+  color: #ffffff;
+}
+
+.tab-menu button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* A page in the sheet scrolls inside its frame. */
@@ -1156,6 +1260,10 @@ body {
     border-bottom: 1px solid var(--ide-border);
   }
 
+  .ide__sash {
+    display: none;
+  }
+
   .ide__titlebar {
     grid-template-columns: minmax(0, 1fr);
     padding-right: 70px;
@@ -1191,7 +1299,8 @@ body {
     gap: 5px;
   }
 
-  .lobe__bar-buttons i {
+  .lobe__bar-buttons > i,
+  .ide__close {
     width: 11px;
     height: 11px;
   }

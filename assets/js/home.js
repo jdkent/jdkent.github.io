@@ -29,6 +29,10 @@ const ide = zoom.querySelector(".ide");
 const explorer = ide.querySelector(".ide__explorer");
 const tree = explorer.querySelector(".tree");
 const tabBar = ide.querySelector(".ide__tabs");
+const closeButton = ide.querySelector(".ide__close");
+const ideBody = ide.querySelector(".ide__body");
+const sash = ide.querySelector(".ide__sash");
+const tabMenu = ide.querySelector(".tab-menu");
 const sheet = zoom.querySelector(".sheet");
 const about = sheet.querySelector(".sheet__about");
 const lists = Object.fromEntries([...sheet.querySelectorAll("template[data-list]")].map((t) => [t.dataset.list, t]));
@@ -258,8 +262,14 @@ tree.addEventListener("click", (event) => {
   go(link.getAttribute("href"));
 });
 
+// Moving to another section folds every other folder.
+let shownKey = null;
+
 function showInExplorer(state) {
-  folders[state.key].setAttribute("aria-expanded", "true");
+  if (state.key !== shownKey) {
+    for (const [key, toggle] of Object.entries(folders)) toggle.setAttribute("aria-expanded", String(key === state.key));
+    shownKey = state.key;
+  }
   const hash = hashOf(state);
   for (const [h, a] of fileLinks) {
     if (h === hash) a.setAttribute("aria-current", "page");
@@ -269,7 +279,8 @@ function showInExplorer(state) {
 }
 
 // Tabs: every file opened stays open until its tab is closed, across
-// sections and zooming out; closing the last one zooms out.
+// sections and zooming out; closing the last one zooms out, and the title
+// bar's close button closes them all.
 
 let tabs = [];
 
@@ -299,13 +310,133 @@ function renderTabs() {
   tabBar.querySelector("[aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 
-function closeTab(hash) {
-  const i = tabs.indexOf(hash);
-  tabs = tabs.filter((h) => h !== hash);
-  if (current.path === null || hash !== hashOf(current)) renderTabs();
-  else if (tabs.length) go(tabs[Math.min(i, tabs.length - 1)]);
+// Keep only the tabs `next`. If the one showing goes, `fallback` shows
+// instead, or with no tabs left, the editor zooms out.
+function keepTabs(next, fallback) {
+  tabs = next;
+  if (current.path === null || tabs.includes(hashOf(current))) renderTabs();
+  else if (tabs.length) go(fallback);
   else go(`#${current.key}`);
 }
+
+function closeTab(hash) {
+  const i = tabs.indexOf(hash);
+  const next = tabs.filter((h) => h !== hash);
+  keepTabs(next, next[Math.min(i, next.length - 1)]);
+}
+
+// The tab menu, on a right click (or the menu key) on a tab.
+let menuFor = null;
+
+function openTabMenu(hash, x, y) {
+  menuFor = hash;
+  const i = tabs.indexOf(hash);
+  tabMenu.querySelector('[data-close="others"]').disabled = tabs.length < 2;
+  tabMenu.querySelector('[data-close="right"]').disabled = i === tabs.length - 1;
+  tabMenu.hidden = false;
+  const box = tabMenu.getBoundingClientRect();
+  tabMenu.style.left = `${Math.max(4, Math.min(x, innerWidth - box.width - 4))}px`;
+  tabMenu.style.top = `${Math.max(4, Math.min(y, innerHeight - box.height - 4))}px`;
+  tabMenu.querySelector("button:not(:disabled)").focus();
+}
+
+function closeTabMenu({ refocus = false } = {}) {
+  if (tabMenu.hidden) return;
+  tabMenu.hidden = true;
+  if (refocus) tabBar.querySelector(`a[href="${CSS.escape(menuFor)}"]`)?.focus();
+  menuFor = null;
+}
+
+tabBar.addEventListener("contextmenu", (event) => {
+  const tab = event.target.closest(".ide__tab");
+  if (!tab) return;
+  event.preventDefault();
+  // The menu key has no pointer position; open below the tab.
+  const box = tab.getBoundingClientRect();
+  const fromKey = event.button !== 2 || (event.clientX === 0 && event.clientY === 0);
+  openTabMenu(tab.querySelector(".ide__tab-close").dataset.hash, fromKey ? box.left : event.clientX, fromKey ? box.bottom : event.clientY);
+});
+
+tabMenu.addEventListener("click", (event) => {
+  const item = event.target.closest("button");
+  if (!item) return;
+  const hash = menuFor;
+  const i = tabs.indexOf(hash);
+  closeTabMenu();
+  if (item.dataset.close === "this") closeTab(hash);
+  else if (item.dataset.close === "others") keepTabs([hash], hash);
+  else if (item.dataset.close === "right") keepTabs(tabs.slice(0, i + 1), hash);
+  else keepTabs([]);
+});
+
+// Up and down move through the menu; Escape closes it, not the editor.
+tabMenu.addEventListener("keydown", (event) => {
+  const items = [...tabMenu.querySelectorAll("button:not(:disabled)")];
+  const at = items.indexOf(document.activeElement);
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    items[(at + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length].focus();
+  } else if (event.key === "Escape" || event.key === "Tab") {
+    closeTabMenu({ refocus: true });
+  } else return;
+  event.preventDefault();
+  event.stopPropagation();
+});
+
+document.addEventListener("pointerdown", (event) => {
+  if (!tabMenu.contains(event.target)) closeTabMenu();
+});
+// A press inside the sheet's page reaches only that page; this window blurs.
+window.addEventListener("blur", () => closeTabMenu());
+window.addEventListener("resize", () => closeTabMenu());
+tabBar.addEventListener("scroll", () => closeTabMenu());
+
+// Explorer width: dragged by the sash at its edge, or the arrow keys on it;
+// a double click restores the default. Remembered in this browser.
+const EXPLORER_MIN = 160;
+const EDITOR_MIN = 280;
+
+function setExplorerWidth(width, { save = true } = {}) {
+  const max = Math.max(EXPLORER_MIN, ideBody.clientWidth - EDITOR_MIN);
+  const w = Math.round(Math.min(max, Math.max(EXPLORER_MIN, width)));
+  ideBody.style.setProperty("--explorer-w", `${w}px`);
+  sash.setAttribute("aria-valuenow", w);
+  sash.setAttribute("aria-valuemin", EXPLORER_MIN);
+  sash.setAttribute("aria-valuemax", Math.round(max));
+  if (save) try { localStorage.setItem("explorer-width", w); } catch (e) {}
+}
+
+let stored = 0;
+try { stored = Number(localStorage.getItem("explorer-width")) || 0; } catch (e) {}
+if (stored) ideBody.style.setProperty("--explorer-w", `${stored}px`);
+
+sash.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  sash.setPointerCapture(event.pointerId);
+  const from = event.clientX, width = explorer.getBoundingClientRect().width;
+  ideBody.classList.add("is-resizing");
+  const move = (e) => setExplorerWidth(width + e.clientX - from, { save: false });
+  const end = () => {
+    ideBody.classList.remove("is-resizing");
+    sash.removeEventListener("pointermove", move);
+    setExplorerWidth(explorer.getBoundingClientRect().width);
+  };
+  sash.addEventListener("pointermove", move);
+  sash.addEventListener("lostpointercapture", end, { once: true });
+});
+
+sash.addEventListener("keydown", (event) => {
+  const by = { ArrowLeft: -16, ArrowRight: 16 }[event.key];
+  if (!by) return;
+  event.preventDefault();
+  setExplorerWidth(explorer.getBoundingClientRect().width + by);
+});
+
+sash.addEventListener("dblclick", () => {
+  ideBody.style.removeProperty("--explorer-w");
+  try { localStorage.removeItem("explorer-width"); } catch (e) {}
+  setExplorerWidth(explorer.getBoundingClientRect().width, { save: false });
+});
 
 tabBar.addEventListener("click", (event) => {
   const close = event.target.closest(".ide__tab-close");
@@ -318,6 +449,8 @@ tabBar.addEventListener("click", (event) => {
   event.preventDefault();
   go(link.getAttribute("href"));
 });
+
+closeButton.addEventListener("click", () => keepTabs([]));
 
 // A middle click closes a tab, as in the editor.
 tabBar.addEventListener("auxclick", (event) => {
@@ -460,13 +593,17 @@ window.addEventListener("message", (event) => {
   const { type, href, x, y } = event.data || {};
   if (type === "open") go(hashFor(pathOf(href), current.key));
   else if (type === "escape") go(`#${current.key}`);
+  else if (type === "ready") shown();
   else if (type === "stimulate") {
     const box = frame.getBoundingClientRect();
     field.stimulate(box.left + x, box.top + y);
   }
 });
 
-frame.addEventListener("load", () => {
+// A page shows once its content and styles are in, which site.js reports,
+// without waiting for its images and fonts; the load event is the fallback.
+function shown() {
+  if (!frame.classList.contains("is-loading")) return;
   frame.classList.remove("is-loading");
   // Hand focus to the page that just loaded, unless it is on the breadcrumb.
   if (current.path !== null && !crumbs.contains(document.activeElement)) frame.contentWindow.focus();
@@ -475,7 +612,9 @@ frame.addEventListener("load", () => {
   const title = doc.querySelector(".page__title")?.textContent.trim() || doc.title;
   frame.title = title;
   if (current.path !== "/") itemCrumb.firstElementChild.textContent = title;
-});
+}
+
+frame.addEventListener("load", shown);
 
 // The theme switch stays usable while zoomed; the page in the sheet follows it.
 new MutationObserver(() => {
@@ -485,6 +624,7 @@ new MutationObserver(() => {
 crumbs.hidden = false;
 explorer.hidden = false;
 tabBar.hidden = false;
+sash.hidden = false;
 const initial = parse(location.hash);
 select(byKey[initial.key]);
 susan.goTo(lobes.indexOf(byKey[initial.key]), { instant: true });
