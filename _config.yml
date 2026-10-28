@@ -13,7 +13,7 @@ title                    : "James D. Kent"
 title_separator          : "-"
 name                     : &name "James D. Kent"
 description              : &description "Research Associate building reproducible neuroimaging meta-analysis tools (Neurosynth Compose, NiMARE) with an applied informatics and open data focus."   # Update this with a general description of your site, this is the default if not overridden by a page
-url                      : https://jdkent.github.io # The base hostname & protocol for your site e.g. "https://[your GitHub username].github.io",
+url                      : https://sudoneuroscience.me # The base hostname & protocol for your site e.g. "https://[your GitHub username].github.io",
                                                            # or if you already have some other page hosted on Github then use "https://[your GitHub username].github.io/[Your Repo Name]"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
 repository               : "jdkent/jdkent.github.io"
@@ -29,7 +29,7 @@ author:
   bio              : "Research Associate. Actively working to automate away his own job."
   location         : "Austin, TX"
   employer         : "University of Texas at Austin"
-  uri              : "https://jdkent.github.io"
+  uri              : "https://sudoneuroscience.me"
   email            : "james.kent@austin.utexas.edu"
 
   # Academic websites
