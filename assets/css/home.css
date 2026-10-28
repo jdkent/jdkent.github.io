@@ -861,11 +861,14 @@ body {
   .lobes.is-ring {
     --lobe-w: 264px;
     --lobe-h: clamp(188px, 26vh, 212px);
-    --ring-top: clamp(56px, 9vh, 80px);
+    --ring-top: clamp(44px, 6vh, 64px);
     height: calc(var(--ring-top) + var(--lobe-h) + var(--radius) * 0.16 + 56px);
   }
 
+  /* The turntable is what a phone is for here, so the screen's spare height
+     goes below it rather than above the name. */
   .page {
+    justify-content: flex-start;
     padding-top: clamp(16px, 4vh, 72px);
   }
 
