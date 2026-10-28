@@ -262,10 +262,18 @@ tree.addEventListener("click", (event) => {
   go(link.getAttribute("href"));
 });
 
+const rootFolder = explorer.querySelector(".ide__root");
+rootFolder.addEventListener("click", () => rootFolder.setAttribute("aria-expanded", String(rootFolder.getAttribute("aria-expanded") !== "true")));
+// On a phone the explorer sits above the editor, so opening anything folds
+// it to its root, leaving the room to the editor.
+const phone = matchMedia("(max-width: 600px)");
+phone.addEventListener("change", () => { if (!phone.matches) rootFolder.setAttribute("aria-expanded", "true"); });
+
 // Moving to another section folds every other folder.
 let shownKey = null;
 
 function showInExplorer(state) {
+  if (phone.matches) rootFolder.setAttribute("aria-expanded", "false");
   if (state.key !== shownKey) {
     for (const [key, toggle] of Object.entries(folders)) toggle.setAttribute("aria-expanded", String(key === state.key));
     shownKey = state.key;
